@@ -15,6 +15,7 @@ export default function MyApp({ Component, pageProps, router }) {
     "/clients/all": "All Clients",
     "/notes": "Therapist Notes",
     "/therapists/manage": "Manage Junior Therapists",
+    "/therapists/edit": "Edit Therapist",
   };
 
   return (

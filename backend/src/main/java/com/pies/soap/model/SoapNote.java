@@ -1,23 +1,16 @@
 package com.pies.soap.model;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.pies.patient.model.Patient;
 import com.pies.therapist.model.Therapist;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "soap_notes")
@@ -47,13 +40,14 @@ public class SoapNote {
     private String pNotes;
     private String conditions;
     private String medications;
+    private String medicationNote;
     private String goals;
     private String diet;
     private String activityLevel;
     private String historyOfConditions;
     private String quickNotes;
     private Integer age;
-    
+
     @JsonFormat(pattern = "HH:mm:ss")
     private LocalTime timeOfSession;
 

@@ -30,9 +30,9 @@ export function SelfAssessmentPage() {
       dateOfSession: d.dateOfSession,
       goalOfSession: d.q0 || "",
       assessment: d.q1 || "",
-      patient: { id: 1 },     // Replace with dynamic ID if needed
-      therapist: { id: 2 },   // Replace with dynamic ID if needed
-      notes: JSON.stringify(d) // Optional: store full form content
+      patient: { id: 1 },     
+      therapist: { id: 2 },   
+      notes: JSON.stringify(d)
     };
 
     fetch("/self-assessments", {

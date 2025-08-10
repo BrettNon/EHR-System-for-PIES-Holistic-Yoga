@@ -1,25 +1,5 @@
 package com.pies.intake.controller;
 
-import java.time.LocalDate;
-import java.util.Map;
-import java.util.Optional;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.pies.intake.model.IntakeForm;
 import com.pies.intake.model.IntakeFormHealthHistory;
 import com.pies.intake.payload.IntakeRequest;
@@ -29,9 +9,20 @@ import com.pies.patient.model.Patient;
 import com.pies.patient.payload.PatientRequest;
 import com.pies.therapist.model.Therapist;
 import com.pies.therapist.repository.TherapistRepository;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.Map;
+import java.util.Optional;
 
 @Tag(name = "IntakeForms")
 @RestController
@@ -42,7 +33,7 @@ public class IntakeController {
     private final IntakeService svc;
     private final TherapistRepository therapistRepository;
     private final IntakeRepository intakeFormRepository;
-    
+
     private Patient mapPatientRequestToPatient(PatientRequest req, Therapist therapist) {
         Patient p = new Patient();
         p.setFirstName(req.getFirstName());
@@ -66,13 +57,16 @@ public class IntakeController {
     }
 
 
-    /** Simple response structure for success messages. */
-    public record SimpleResponse(String message) {}
-    
+    /**
+     * Simple response structure for success messages.
+     */
+    public record SimpleResponse(String message) {
+    }
+
 
     @PreAuthorize("hasAnyRole('JUNIOR', 'SENIOR', 'ADMIN')")
     @PostMapping
-    public ResponseEntity<?> createIntake(@RequestBody IntakeRequest request) {
+    public ResponseEntity<?> createIntake(@RequestBody @Valid IntakeRequest request) {
         // 1. Find and assign therapist
         Therapist therapist = therapistRepository.findById(request.getTherapistId())
                 .orElseThrow(() -> new RuntimeException("Therapist not found"));
@@ -131,7 +125,7 @@ public class IntakeController {
         }
 
         // SO MUCH DEBUGGING HERE - RIP 4 HOURS, GONE BUT NOT FORGOTTEN
-       try {
+        try {
             //System.out.println(">>> Assigned therapist ID: " + therapist.getId());
             //System.out.println(">>> Form therapist ID before save: " + form.getTherapist());
             IntakeForm saved = svc.save(form, history);
@@ -140,12 +134,12 @@ public class IntakeController {
         } catch (Exception e) {
             //e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
-                "status", 500,
-                "message", e.getMessage()
+                    "status", 500,
+                    "message", e.getMessage()
             ));
         }
 
-        
+
         // 4. Save everything via service
         ///IntakeForm saved = svc.save(form, history);
         ///return ResponseEntity.ok(saved);
@@ -153,7 +147,7 @@ public class IntakeController {
 
     @PreAuthorize("hasAnyRole('SENIOR', 'ADMIN')")
     @PutMapping("{id}")
-    public ResponseEntity<SimpleResponse> update(@PathVariable Long id, @RequestBody IntakeForm f) {
+    public ResponseEntity<SimpleResponse> update(@PathVariable Long id, @RequestBody @Valid IntakeForm f) {
         svc.update(id, f);
         return ResponseEntity.ok(new SimpleResponse("Intake form updated successfully"));
     }
@@ -180,12 +174,12 @@ public class IntakeController {
         svc.delete(id);
         return ResponseEntity.ok(new SimpleResponse("Intake form deleted successfully"));
     }
-    
+
     @GetMapping("/patient/{patientId}")
     @PreAuthorize("hasAnyRole('JUNIOR', 'SENIOR', 'ADMIN')")
     public ResponseEntity<IntakeForm> getByPatientId(@PathVariable Long patientId) {
         return intakeFormRepository.findTopByPatientIdAndActiveStatusTrueOrderByIdDesc(patientId)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
