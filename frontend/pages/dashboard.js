@@ -47,7 +47,7 @@ export default function Dashboard() {
   // Remove unwanted links and show Sr/Admin only items if role allows
   const ACTIONS = [
     { href: "/intake", label: "Intake Form", icon: FileTextIcon },
-    { href: "/soap", label: "SOAP Form", icon: PenSquareIcon },
+    { href: "/soap", label: "SOAP Note", icon: PenSquareIcon },
     { href: "/self-assessment", label: "Self Assessment", icon: ClipboardListIcon },
     { href: "/clients/assigned", label: "Assigned Clients", icon: UsersIcon },
     { href: "/clients/history", label: "Session History", icon: HistoryIcon },
