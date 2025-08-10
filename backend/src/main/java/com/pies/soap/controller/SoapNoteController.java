@@ -1,5 +1,24 @@
 package com.pies.soap.controller;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.pies.patient.model.Patient;
 import com.pies.patient.repository.PatientRepository;
 import com.pies.soap.model.SoapNote;
@@ -7,6 +26,7 @@ import com.pies.soap.payload.SoapNoteRequest;
 import com.pies.soap.service.SoapNoteService;
 import com.pies.therapist.model.Therapist;
 import com.pies.therapist.repository.TherapistRepository;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,52 +34,37 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
 
 @Tag(name = "SoapNotes")
 @RestController
 @RequestMapping("/soap-notes")
 @RequiredArgsConstructor
 public class SoapNoteController {
-    private static final Logger logger = LoggerFactory.getLogger(SoapNoteController.class);
 
     private final SoapNoteService svc;
     private final PatientRepository patientRepo;
     private final TherapistRepository therapistRepo;
 
 
-    /**
-     * Simple response structure for success messages.
-     */
+    /** Simple response structure for success messages. */
     public record SimpleResponse(String message) {
     }
 
-    /**
-     * Create a new SOAP note. JUNIOR, SENIOR, and ADMIN roles allowed.
-     */
+    /** Create a new SOAP note. JUNIOR, SENIOR, and ADMIN roles allowed. */
     @Operation(summary = "Create a new SOAP note", requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            required = true,
-            content = @Content(schema = @Schema(implementation = SoapNoteRequest.class))
+    required = true,
+    content = @Content(schema = @Schema(implementation = SoapNoteRequest.class))
     ))
     @PreAuthorize("hasAnyRole('JUNIOR', 'SENIOR', 'ADMIN')")
     @PostMapping
     public ResponseEntity<SimpleResponse> create(@RequestBody @Valid SoapNoteRequest req) {
         Patient patient = patientRepo.findById(req.getPatientId())
-                .orElseThrow(() -> new EntityNotFoundException("Patient not found with ID " + req.getPatientId()));
+            .orElseThrow(() -> new EntityNotFoundException("Patient not found with ID " + req.getPatientId()));
         Therapist therapist = therapistRepo.findById(req.getTherapistId())
-                .orElseThrow(() -> new EntityNotFoundException("Therapist not found with ID " + req.getTherapistId()));
-        logger.info("Received request: patientId={}, therapistId={}", req.getPatientId(), req.getTherapistId());
+            .orElseThrow(() -> new EntityNotFoundException("Therapist not found with ID " + req.getTherapistId()));
+        System.out.println("Received request: patientId=" + req.getPatientId() + ", therapistId=" + req.getTherapistId());
+
+
 
         SoapNote note = new SoapNote();
         note.setPatient(patient);
@@ -74,7 +79,6 @@ public class SoapNoteController {
         note.setPNotes(req.getPnotes());
         note.setConditions(req.getConditions());
         note.setMedications(req.getMedications());
-        note.setMedicationNote(req.getMedicationNote());
         note.setGoals(req.getGoals());
         note.setDiet(req.getDiet());
         note.setActivityLevel(req.getActivityLevel());
@@ -84,8 +88,8 @@ public class SoapNoteController {
         note.setActiveStatus(req.isActiveStatus());
 
         svc.save(note);
-        logger.info("Saving SOAP note with patient ID: {}", note.getPatient().getId());
-        logger.info("Therapist ID: {}", note.getTherapist().getId());
+        System.out.println("Saving SOAP note with patient ID: " + note.getPatient().getId());
+        System.out.println("Therapist ID: " + note.getTherapist().getId());
 
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -93,9 +97,7 @@ public class SoapNoteController {
     }
 
 
-    /**
-     * Update an existing SOAP note. Only SENIOR and ADMIN allowed.
-     */
+    /** Update an existing SOAP note. Only SENIOR and ADMIN allowed. */
     @PreAuthorize("hasAnyRole('SENIOR', 'ADMIN')")
     @PutMapping("{id}")
     public ResponseEntity<SimpleResponse> update(@PathVariable Long id, @RequestBody SoapNote n) {
@@ -103,18 +105,14 @@ public class SoapNoteController {
         return ResponseEntity.ok(new SimpleResponse("SOAP note updated successfully"));
     }
 
-    /**
-     * Get a SOAP note by ID. All roles can view.
-     */
+    /** Get a SOAP note by ID. All roles can view. */
     @PreAuthorize("hasAnyRole('JUNIOR', 'SENIOR', 'ADMIN')")
     @GetMapping("{id}")
     public SoapNote get(@PathVariable Long id) {
         return svc.findById(id);
     }
 
-    /**
-     * List all active SOAP notes. All roles can view their assigned data.
-     */
+    /** List all active SOAP notes. All roles can view their assigned data. */
     @PreAuthorize("hasAnyRole('JUNIOR', 'SENIOR', 'ADMIN')")
     @GetMapping
     public Page<SoapNote> list(@RequestParam(defaultValue = "0") int page,
@@ -124,9 +122,7 @@ public class SoapNoteController {
         return svc.findActive(q, pageable);
     }
 
-    /**
-     * Soft-delete a SOAP note by ID. Only SENIOR and ADMIN allowed.
-     */
+    /** Soft-delete a SOAP note by ID. Only SENIOR and ADMIN allowed. */
     @PreAuthorize("hasAnyRole('SENIOR', 'ADMIN')")
     @DeleteMapping("{id}")
     public ResponseEntity<SimpleResponse> delete(@PathVariable Long id) {

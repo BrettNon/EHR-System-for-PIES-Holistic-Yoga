@@ -1,12 +1,11 @@
 package com.pies.patient.payload;
 
+import java.time.LocalDate;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -21,10 +20,7 @@ public class PatientRequest {
     private LocalDate dateOfBirth;
     private String address;
     private String city;
-    @Pattern(regexp = "^[A-Z]{2}$", message = "State code must be 2 letters")
     private String state;
-
-    @Pattern(regexp = "^\\d{5}(?:-\\d{4})?$", message = "Invalid ZIP code")
     private String zipCode;
 
     @Email

@@ -1,18 +1,20 @@
 package com.pies.therapist.service;
 
-import com.pies.audit.service.AuditLogService;
-import com.pies.therapist.model.Therapist;
-import com.pies.therapist.model.TherapistRole;
-import com.pies.therapist.repository.TherapistRepository;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import com.pies.audit.service.AuditLogService;
+import com.pies.therapist.model.Therapist;
+import com.pies.therapist.repository.TherapistRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+
 
 
 /**
@@ -26,6 +28,7 @@ public class TherapistService {
     private final TherapistRepository repo;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
+
 
 
     /**
@@ -68,15 +71,6 @@ public class TherapistService {
             entity.setPhoneNumber(update.getPhoneNumber());
         if (update.getRawPassword() != null && !update.getRawPassword().isBlank()) {
             entity.setPasswordHash(passwordEncoder.encode(update.getRawPassword()));
-        }
-        if (update.getRole() != null) {
-            if (entity.getRole() == TherapistRole.ADMIN && update.getRole() != TherapistRole.ADMIN) {
-                long admins = repo.countByRoleAndActiveStatusTrue(TherapistRole.ADMIN);
-                if (admins <= 1) {
-                    throw new IllegalArgumentException("At least one admin must remain");
-                }
-            }
-            entity.setRole(update.getRole());
         }
         Therapist saved = repo.save(entity);
         auditLogService.record("UPDATE", "Therapist", saved.getId());
@@ -130,13 +124,12 @@ public class TherapistService {
     /**
      * Retrieves all therapists (no filtering).
      * For admin/debug purposes.
-     *
+     * 
      * @return Iterable of Therapist entities.
      */
     public Iterable<Therapist> findAll() {
         return repo.findAll();
     }
-
     public List<Therapist> getAllActiveTherapists() {
         return repo.findByActiveStatusTrue();
     }

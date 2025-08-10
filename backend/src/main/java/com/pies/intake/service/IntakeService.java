@@ -1,5 +1,10 @@
 package com.pies.intake.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.pies.audit.service.AuditLogService;
 import com.pies.intake.model.IntakeForm;
 import com.pies.intake.model.IntakeFormHealthHistory;
@@ -7,14 +12,9 @@ import com.pies.intake.repository.IntakeFormHealthHistoryRepository;
 import com.pies.intake.repository.IntakeRepository;
 import com.pies.patient.repository.PatientRepository;
 import com.pies.therapist.repository.TherapistRepository;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service class for managing intake forms and their health history.
@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class IntakeService {
-    private static final Logger logger = LoggerFactory.getLogger(IntakeService.class);
 
     private final IntakeRepository intakeRepository;
     private final AuditLogService auditLogService;
@@ -44,9 +43,9 @@ public class IntakeService {
      */
 
     public IntakeForm save(IntakeForm form, IntakeFormHealthHistory history) {
-        logger.info(">>> IntakeService.save() called");
-        logger.info(">>> IntakeForm: {}", form);
-        logger.info(">>> HealthHistory: {}", history);
+        System.out.println(">>> IntakeService.save() called");
+        System.out.println(">>> IntakeForm: " + form);
+        System.out.println(">>> HealthHistory: " + history);
 
         try {
             // Save Patient first if needed
@@ -63,7 +62,8 @@ public class IntakeService {
 
             return savedForm;
         } catch (Exception e) {
-            logger.error(">>> ERROR during save: {}", e.getMessage(), e);
+            System.out.println(">>> ERROR during save: " + e.getMessage());
+            e.printStackTrace();
             throw e;
         }
     }

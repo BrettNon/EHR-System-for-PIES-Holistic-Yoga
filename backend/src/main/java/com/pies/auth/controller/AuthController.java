@@ -1,21 +1,25 @@
 package com.pies.auth.controller;
 
-import com.pies.auth.JwtService;
-import com.pies.therapist.model.Therapist;
-import com.pies.therapist.model.TherapistRole;
-import com.pies.therapist.repository.TherapistRepository;
-import jakarta.validation.constraints.NotBlank;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.pies.auth.JwtService;
+import com.pies.therapist.model.Therapist;
+import com.pies.therapist.model.TherapistRole;
+import com.pies.therapist.repository.TherapistRepository;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Authentication endpoints for login and registration.
@@ -29,7 +33,6 @@ public class AuthController {
     private final JwtService jwt;
     private final PasswordEncoder encoder;
     private final Environment env;
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     // Request body for login
     record LoginReq(@NotBlank String username, @NotBlank String password) {
@@ -79,7 +82,7 @@ public class AuthController {
         if (!encoder.matches(req.password(), u.getPasswordHash()))
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
 
-        logger.info("Login successful for {} with role {}", u.getUsername(), u.getRole());
+        System.out.println("Login successful for " + u.getUsername() + " with role " + u.getRole());
         return new LoginResp(jwt.generate(u), u.getRole());
     }
 
