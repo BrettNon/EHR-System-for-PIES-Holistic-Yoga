@@ -1,7 +1,7 @@
 // pages/clients/all.js
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { SearchIcon, Trash2Icon } from "lucide-react";
+import { SearchIcon, Trash2Icon, SlidersHorizontal } from "lucide-react";
 
 // add near top of the file
 const STATE_MAP = {
@@ -45,7 +45,6 @@ const US_STATES = [
   { code: "WV", name: "West Virginia" }, { code: "WI", name: "Wisconsin" }, { code: "WY", name: "Wyoming" },
 ];
 
-
 export default function AllClientsPage() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +64,10 @@ export default function AllClientsPage() {
 
   // sort: alpha, age, recency
   const [sortBy, setSortBy] = useState("alpha"); // 'alpha' | 'age' | 'recency'
+
+  // filters menu
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const menuRef = useRef(null);
 
   // create modal
   const [openCreate, setOpenCreate] = useState(false);
@@ -92,7 +95,7 @@ export default function AllClientsPage() {
       ? Number(localStorage.getItem("therapistId") || "1")
       : 1;
 
-  // ---------- helpers (same as Assigned) ----------
+  // ---------- helpers ----------
   function parseYmd(ymd) {
     if (!ymd) return null;
     const [y, m, d] = ymd.split("-").map(Number);
@@ -121,6 +124,25 @@ export default function AllClientsPage() {
     if (mDiff < 0 || (mDiff === 0 && dDiff < 0)) age--;
     return age;
   };
+
+  // close filters on outside click / Escape
+  useEffect(() => {
+    const onClick = (e) => {
+      if (!filtersOpen) return;
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setFiltersOpen(false);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setFiltersOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [filtersOpen]);
 
   // ---------- fetch ALL patients ----------
   const loadClients = async () => {
@@ -283,6 +305,13 @@ export default function AllClientsPage() {
   const handleAgeMin = (v) => setAgeMin(Math.max(MIN_AGE, Math.min(Number(v), ageMax)));
   const handleAgeMax = (v) => setAgeMax(Math.min(MAX_AGE, Math.max(Number(v), ageMin)));
 
+  const activeFilterCount =
+    (ageMin !== MIN_AGE ? 1 : 0) +
+    (ageMax !== MAX_AGE ? 1 : 0) +
+    (sinceFrom ? 1 : 0) +
+    (sinceTo ? 1 : 0) +
+    (sortBy !== "alpha" ? 1 : 0);
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header with Create */}
@@ -296,10 +325,10 @@ export default function AllClientsPage() {
         </button>
       </div>
 
-      {/* Filters – one line on md+; scrolls horizontally if cramped */}
-      <div className="flex flex-wrap md:flex-nowrap items-end gap-4 overflow-x-auto pb-2">
+      {/* Search + Filters button */}
+      <div className="flex items-end gap-3">
         {/* Search */}
-        <div className="relative w-[280px] shrink-0">
+        <div className="relative w-full sm:w-[320px]">
           <label className="block text-sm font-medium text-brandLavender mb-1">Search</label>
           <input
             type="text"
@@ -314,109 +343,158 @@ export default function AllClientsPage() {
           />
         </div>
 
-        {/* Age range (dual slider) */}
-        <div className="w-[300px] shrink-0">
-          <label className="block text-sm font-medium text-brandLavender mb-1">
-            Age range ({ageMin} – {ageMax})
-          </label>
-          <div className="relative py-3 w-full">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-200 rounded" />
-            <div
-              className="absolute top-1/2 -translate-y-1/2 h-1 bg-brandLavender rounded"
-              style={{
-                left: `${((ageMin - MIN_AGE) / (MAX_AGE - MIN_AGE)) * 100}%`,
-                right: `${(1 - (ageMax - MIN_AGE) / (MAX_AGE - MIN_AGE)) * 100}%`,
-              }}
-            />
-            <input
-              type="range"
-              min={MIN_AGE}
-              max={MAX_AGE}
-              value={ageMin}
-              onChange={(e) => handleAgeMin(e.target.value)}
-              className="absolute left-0 right-0 top-1/2 -translate-y-1/2 w-full appearance-none bg-transparent pointer-events-auto"
-            />
-            <input
-              type="range"
-              min={MIN_AGE}
-              max={MAX_AGE}
-              value={ageMax}
-              onChange={(e) => handleAgeMax(e.target.value)}
-              className="absolute left-0 right-0 top-1/2 -translate-y-1/2 w-full appearance-none bg-transparent pointer-events-auto"
-            />
-            <style jsx>{`
-              input[type="range"]::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 18px;
-                height: 18px;
-                border-radius: 9999px;
-                background: #7c3aed;
-                border: 2px solid white;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-                cursor: pointer;
-                position: relative;
-              }
-              input[type="range"]::-moz-range-thumb {
-                width: 18px;
-                height: 18px;
-                border-radius: 9999px;
-                background: #7c3aed;
-                border: 2px solid white;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-                cursor: pointer;
-              }
-              input[type="range"] {
-                height: 18px;
-              }
-            `}</style>
-          </div>
-        </div>
-
-        {/* Client since (from/to) */}
-        <div className="shrink-0">
-          <label className="block text-sm font-medium text-brandLavender mb-1">Since</label>
-          <div className="flex gap-3">
-            <input
-              type="date"
-              className="w-[155px] border rounded p-2"
-              value={sinceFrom}
-              onChange={(e) => setSinceFrom(e.target.value)}
-              aria-label="Since from"
-            />
-            <input
-              type="date"
-              className="w-[155px] border rounded p-2"
-              value={sinceTo}
-              onChange={(e) => setSinceTo(e.target.value)}
-              aria-label="Since to"
-            />
-          </div>
-        </div>
-
-        {/* Sort */}
-        <div className="w-[230px] shrink-0">
-          <label className="block text-sm font-medium text-brandLavender mb-1">Sort by</label>
-          <select
-            className="w-full border rounded p-2"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="alpha">Alphabetical (A → Z)</option>
-            <option value="age">Age (youngest → oldest)</option>
-            <option value="recency">Client Since (newest → oldest)</option>
-          </select>
-        </div>
-
-        {/* Reset */}
-        <div className="w-[100px] shrink-0">
+        {/* Filters menu trigger */}
+        <div className="relative" ref={menuRef}>
+          <label className="block text-sm font-medium text-transparent mb-1 select-none">.</label>
           <button
-            onClick={resetFilters}
-            className="w-full h-[42px] rounded border hover:bg-gray-50 mt-6"
-            title="Clear all filters"
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={filtersOpen}
+            aria-controls="filters-menu"
+            onClick={() => setFiltersOpen((o) => !o)}
+            className="inline-flex items-center gap-2 px-3 py-2 border rounded hover:bg-gray-50"
+            title="Open filters"
           >
-            Reset
+            <SlidersHorizontal size={18} />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-brandLavender text-white">
+                {activeFilterCount}
+              </span>
+            )}
           </button>
+
+          {/* Menu panel */}
+          {filtersOpen && (
+            <div
+              id="filters-menu"
+              role="dialog"
+              aria-label="Filters"
+              className="absolute z-50 mt-2 right-0 w-[360px] max-w-[90vw] bg-white border rounded-xl shadow-xl p-4"
+            >
+              {/* Age range */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-brandLavender mb-1">
+                  Age range ({ageMin} – {ageMax})
+                </label>
+                <div className="relative py-3 w-full">
+                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-200 rounded" />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 h-1 bg-brandLavender rounded"
+                    style={{
+                      left: `${((ageMin - MIN_AGE) / (MAX_AGE - MIN_AGE)) * 100}%`,
+                      right: `${(1 - (ageMax - MIN_AGE) / (MAX_AGE - MIN_AGE)) * 100}%`,
+                    }}
+                  />
+                  <input
+                    type="range"
+                    min={MIN_AGE}
+                    max={MAX_AGE}
+                    value={ageMin}
+                    onChange={(e) => handleAgeMin(e.target.value)}
+                    className="absolute left-0 right-0 top-1/2 -translate-y-1/2 w-full appearance-none bg-transparent pointer-events-auto"
+                  />
+                  <input
+                    type="range"
+                    min={MIN_AGE}
+                    max={MAX_AGE}
+                    value={ageMax}
+                    onChange={(e) => handleAgeMax(e.target.value)}
+                    className="absolute left-0 right-0 top-1/2 -translate-y-1/2 w-full appearance-none bg-transparent pointer-events-auto"
+                  />
+                  <style jsx>{`
+                    input[type="range"]::-webkit-slider-thumb {
+                      -webkit-appearance: none;
+                      appearance: none;
+                      width: 18px;
+                      height: 18px;
+                      border-radius: 9999px;
+                      background: #7c3aed;
+                      border: 2px solid white;
+                      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                      cursor: pointer;
+                      position: relative;
+                    }
+                    input[type="range"]::-moz-range-thumb {
+                      width: 18px;
+                      height: 18px;
+                      border-radius: 9999px;
+                      background: #7c3aed;
+                      border: 2px solid white;
+                      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                      cursor: pointer;
+                    }
+                    input[type="range"] { height: 18px; }
+                  `}</style>
+                </div>
+              </div>
+
+              {/* Since range */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-brandLavender mb-1">Client since</label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    className="w-1/2 border rounded p-2"
+                    value={sinceFrom}
+                    onChange={(e) => setSinceFrom(e.target.value)}
+                    aria-label="Since from"
+                  />
+                  <input
+                    type="date"
+                    className="w-1/2 border rounded p-2"
+                    value={sinceTo}
+                    onChange={(e) => setSinceTo(e.target.value)}
+                    aria-label="Since to"
+                  />
+                </div>
+              </div>
+
+              {/* Sort */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-brandLavender mb-1">Sort by</label>
+                <select
+                  className="w-full border rounded p-2"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="alpha">Alphabetical (A → Z)</option>
+                  <option value="age">Age (youngest → oldest)</option>
+                  <option value="recency">Client Since (newest → oldest)</option>
+                </select>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    resetFilters();
+                  }}
+                  className="px-3 py-2 rounded border hover:bg-gray-50"
+                  title="Clear all filters"
+                  type="button"
+                >
+                  Reset
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen(false)}
+                    className="px-3 py-2 rounded border hover:bg-gray-50"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen(false)}
+                    className="px-3 py-2 rounded bg-brandLavender text-white"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -529,17 +607,17 @@ export default function AllClientsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">State *</label>
-                  <select
-                    className="w-full border rounded p-2"
-                    value={form.state}
-                    onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
-                    required
-                  >
-                    <option value="">— Select —</option>
-                    {US_STATES.map((s) => (
-                      <option key={s.code} value={s.code}>{s.name} ({s.code})</option>
-                    ))}
-                  </select>
+                <select
+                  className="w-full border rounded p-2"
+                  value={form.state}
+                  onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
+                  required
+                >
+                  <option value="">— Select —</option>
+                  {US_STATES.map((s) => (
+                    <option key={s.code} value={s.code}>{s.name} ({s.code})</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Zip code</label>

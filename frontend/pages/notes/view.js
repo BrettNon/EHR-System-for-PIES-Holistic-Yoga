@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
-/* helpers */
+/* ---------- helpers ---------- */
 function parseYmd(ymd) {
   if (!ymd) return null;
   if (ymd.includes("T")) return new Date(ymd);
@@ -15,28 +15,132 @@ const fmtDate = (s) =>
 const yn = (v) => (v === true ? "Yes" : v === false ? "No" : "—");
 const fullName = (p) => (p ? `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() : "");
 
-const TYPE_META = {
-  soap:   { label: "SOAP Note",        endpoint: "soap-notes" },
-  self:   { label: "Self Assessment",  endpoint: "self-assessments" },
-  intake: { label: "Intake Form",      endpoint: "intakes" },
-};
+/** tokens → human label (used for self-assessment checkbox groups saved as sanitized keys) */
+const desanitize = (k = "") =>
+  k
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\bIi\b/g, "II")
+    .replace(/\bIii\b/g, "III")
+    .trim();
 
-function Section({ title, children }) {
+/** Render a value that might be an array/string as chips */
+function BadgeList({ items }) {
+  if (!items || (Array.isArray(items) && items.length === 0)) return <span>—</span>;
+  const arr =
+    Array.isArray(items)
+      ? items
+      : typeof items === "string"
+        ? items.split(/[;,]\s*|\s{2,}/).filter(Boolean)
+        : [String(items)];
   return (
-    <section className="bg-white rounded-xl shadow-md p-5 space-y-3 print-avoid-break">
+    <div className="flex flex-wrap gap-2">
+      {arr.map((it, i) => (
+        <span
+          key={`${it}-${i}`}
+          className="inline-flex items-center rounded-full bg-purple-50 text-brandLavender border border-brandLavender/30 px-2 py-0.5 text-xs"
+        >
+          {it}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/* ---------- small read-only UI primitives ---------- */
+function SectionCard({ title, children, className = "" }) {
+  return (
+    <section className={`bg-white rounded-xl shadow-md p-5 space-y-4 print-avoid-break ${className}`}>
       <h3 className="font-semibold text-brandLavender">{title}</h3>
       {children}
     </section>
   );
 }
-function KV({ label, children }) {
+
+function ReadOnlyField({ label, value, children }) {
   return (
-    <div className="grid grid-cols-[10rem,1fr] gap-3">
-      <div className="text-sm text-gray-600">{label}</div>
-      <div className="text-sm text-gray-900">{children ?? "—"}</div>
+    <div>
+      <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+      <div className="border rounded-md px-3 py-2 min-h-[40px] text-sm bg-gray-50">
+        {children ?? (value || "—")}
+      </div>
     </div>
   );
 }
+
+function ReadOnlyArea({ label, value }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+      <div className="border rounded-md px-3 py-2 min-h-[64px] whitespace-pre-wrap text-sm bg-gray-50">
+        {value || "—"}
+      </div>
+    </div>
+  );
+}
+
+function CheckboxGrid({ title, items }) {
+  return (
+    <div>
+      <div className="block text-xs font-medium text-gray-500 mb-2">{title}</div>
+      <div className="grid sm:grid-cols-2 gap-2">
+        {items.map(({ label, checked }, i) => (
+          <label
+            key={`${label}-${i}`}
+            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+              checked ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
+            }`}
+          >
+            <input type="checkbox" checked={!!checked} readOnly className="accent-brandLavender" />
+            <span>{label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- constants mirroring your entry forms ---------- */
+const HEALTH_HISTORY_FIELDS = [
+  { key: "brokenBones", label: "Broken/Dislocated bones" },
+  { key: "muscleStrain", label: "Muscle strain/sprain" },
+  { key: "arthritisBursitis", label: "Arthritis/Bursitis" },
+  { key: "discProblems", label: "Disc problems" },
+  { key: "scoliosis", label: "Scoliosis" },
+  { key: "backProblems", label: "Back problems" },
+  { key: "osteoporosis", label: "Osteoporosis" },
+  { key: "diabetes", label: "Diabetes (type 1 or 2)" },
+  { key: "bloodPressure", label: "High/Low blood pressure" },
+  { key: "insomnia", label: "Insomnia" },
+  { key: "anxietyDepression", label: "Anxiety/Depression" },
+  { key: "asthma", label: "Asthma / Short breath" },
+  { key: "numbnessTingling", label: "Numbness / Tingling" },
+  { key: "cancer", label: "Cancer" },
+  { key: "seizures", label: "Seizures" },
+  { key: "stroke", label: "Stroke" },
+  { key: "heartConditions", label: "Heart conditions / Chest pain" },
+  { key: "pregnancy", label: "Pregnancy" },
+  { key: "autoimmune", label: "Auto-immune condition" },
+  { key: "surgery", label: "Surgery" },
+];
+
+/** Self-assessment prompts from your form */
+const SA_PROMPTS = [
+  "How did the client(s) react to the tools presented?",
+  "How did the client(s) react to you?",
+  "How did you respond to the client(s)?",
+  "What adaptations and/or modifications did you utilize?",
+  "What are the next steps for the client(s) work with you (based on direct feedback and your observations)?",
+  "What were your biggest wins of this session?",
+  "What were your biggest lessons learned?",
+  "What, if any, guidance do you need from your mentor?",
+];
+
+const TYPE_META = {
+  soap:   { label: "SOAP Note",        endpoint: "soap-notes" },
+  self:   { label: "Self Assessment",  endpoint: "self-assessments" },
+  intake: { label: "Intake Form",      endpoint: "intakes" },
+};
 
 export default function NoteViewer() {
   const router = useRouter();
@@ -73,6 +177,25 @@ export default function NoteViewer() {
   const patient = data?.patient;
   const therapist = data?.therapist;
 
+  /* ----------- SELF-ASSESSMENT: parse saved JSON "notes" safely ----------- */
+  const notesJson = useMemo(() => {
+    if (!data || !data.notes) return null;
+    try {
+      const parsed = typeof data.notes === "string" ? JSON.parse(data.notes) : data.notes;
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }, [data]);
+
+  // Extract selected items from a checkbox group object (truthy keys)
+  const pickSelected = (obj) =>
+    obj && typeof obj === "object"
+      ? Object.entries(obj)
+          .filter(([, v]) => !!v)
+          .map(([k]) => desanitize(k))
+      : [];
+
   return (
     <div className="max-w-4xl mx-auto py-8 space-y-6">
       {/* header (hidden on print) */}
@@ -100,128 +223,195 @@ export default function NoteViewer() {
       {!loading && !err && data && (
         <div id="print-area" className="space-y-6">
           {/* Summary */}
-          <Section title="Summary">
+          <SectionCard title="Summary">
             <div className="grid sm:grid-cols-2 gap-4">
-              <KV label="Patient">{fullName(patient) || `#${patient?.id ?? ""}`}</KV>
-              <KV label="Therapist">{fullName(therapist) || `#${therapist?.id ?? ""}`}</KV>
-              <KV label="Date">
-                {fmtDate(
+              <ReadOnlyField label="Patient" value={fullName(patient) || `#${patient?.id ?? ""}`} />
+              <ReadOnlyField label="Therapist" value={fullName(therapist) || `#${therapist?.id ?? ""}`} />
+              <ReadOnlyField label="Date" value={
+                fmtDate(
                   data.dateOfSession ||
-                    data.dateSubmitted ||
-                    data.lastPracticedDate ||
-                    patient?.dateCreated
-                )}
-              </KV>
-              <KV label="Record ID">{data.id}</KV>
+                  data.dateSubmitted ||
+                  data.lastPracticedDate ||
+                  patient?.dateCreated
+                )
+              } />
+              <ReadOnlyField label="Record ID" value={data.id} />
             </div>
-          </Section>
+          </SectionCard>
 
-          {/* Type-specific rendering */}
+          {/* ============= SOAP (read-only form look) ============= */}
           {type?.toLowerCase() === "soap" && (
             <>
-              <Section title="Session">
-                <div className="space-y-2">
-                  <KV label="Date">{fmtDate(data.dateOfSession)}</KV>
-                  <KV label="Time">{data.timeOfSession || "—"}</KV>
-                  <KV label="Length">{data.sessionLength || "—"}</KV>
-                  <KV label="Type">{data.typeOfSession || "—"}</KV>
+              <SectionCard title="Session Details">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <ReadOnlyField label="Date of Session" value={fmtDate(data.dateOfSession)} />
+                  <ReadOnlyField label="Time of Session" value={data.timeOfSession || "—"} />
+                  <ReadOnlyField label="Session Length" value={data.sessionLength || "—"} />
+                  <ReadOnlyField label="Type of Session" value={data.typeOfSession || "—"} />
                 </div>
-              </Section>
+              </SectionCard>
 
-              <Section title="Details">
-                <div className="space-y-2">
-                  <KV label="Conditions">{data.conditions}</KV>
-                  <KV label="Medications">{data.medications}</KV>
-                  <KV label="Medication Note">{data.medicationNote}</KV>
-                  <KV label="Goals">{data.goals}</KV>
-                  <KV label="Diet">{data.diet}</KV>
-                  <KV label="Activity Level">{data.activityLevel}</KV>
-                  <KV label="History of Conditions">{data.historyOfConditions}</KV>
-                  <KV label="Quick Notes">{data.quickNotes}</KV>
+              <SectionCard title="Client Meta">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <ReadOnlyField label="Age" value={data.age ?? "—"} />
+                  <ReadOnlyField label="Activity Level" value={data.activityLevel || "—"} />
+                  <ReadOnlyArea label="Conditions" value={data.conditions} />
+                  <ReadOnlyArea label="History of Conditions" value={data.historyOfConditions} />
+                  <ReadOnlyArea label="Medications" value={data.medications} />
+                  <ReadOnlyArea label="Goals" value={data.goals} />
+                  <ReadOnlyArea label="Diet" value={data.diet} />
+                  <ReadOnlyArea label="Quick Notes" value={data.quickNotes} />
                 </div>
-              </Section>
+              </SectionCard>
 
-              <Section title="SOAP">
-                <div className="space-y-2">
-                  <KV label="Subjective">{data.snotes}</KV>
-                  <KV label="Objective">{data.onotes}</KV>
-                  <KV label="Assessment">{data.anotes}</KV>
-                  <KV label="Plan">{data.pnotes}</KV>
+              <SectionCard title="SOAP Blocks">
+                <div className="grid gap-4">
+                  <ReadOnlyArea label="Subjective (S)" value={data.snotes} />
+                  <ReadOnlyArea label="Objective (O)" value={data.onotes} />
+                  <ReadOnlyArea label="Assessment (A)" value={data.anotes} />
+                  <ReadOnlyArea label="Plan (P)" value={data.pnotes} />
                 </div>
-              </Section>
+              </SectionCard>
             </>
           )}
 
+          {/* ============= SELF-ASSESSMENT (reconstruct form) ============= */}
           {type?.toLowerCase() === "self" && (
             <>
-              <Section title="Session">
-                <div className="space-y-2">
-                  <KV label="Date">{fmtDate(data.dateOfSession)}</KV>
-                  <KV label="Goal of Session">{data.goalOfSession}</KV>
+              <SectionCard title="Session">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <ReadOnlyField label="Date of Session" value={fmtDate(data.dateOfSession)} />
+                  <ReadOnlyArea label="Goal of Session" value={data.goalOfSession} />
                 </div>
-              </Section>
-              <Section title="Assessment">
-                <div className="space-y-2">
-                  <KV label="Assessment">{data.assessment}</KV>
-                  <KV label="Notes">{data.notes}</KV>
+              </SectionCard>
+
+              <SectionCard title="Assessment Prompts">
+                <div className="grid gap-4">
+                  {SA_PROMPTS.map((label, i) => (
+                    <ReadOnlyArea key={i} label={label} value={notesJson ? notesJson[`q${i}`] : "—"} />
+                  ))}
                 </div>
-              </Section>
+              </SectionCard>
+
+              <SectionCard title="Focus Areas">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <ReadOnlyField label="Koshas">
+                    <BadgeList items={pickSelected(notesJson?.koshas)} />
+                  </ReadOnlyField>
+                  <ReadOnlyField label="Asana">
+                    <BadgeList items={pickSelected(notesJson?.asana)} />
+                  </ReadOnlyField>
+                  <ReadOnlyField label="Mindfulness">
+                    <BadgeList items={pickSelected(notesJson?.mindfulness)} />
+                  </ReadOnlyField>
+                  <ReadOnlyField label="Kleshas">
+                    <BadgeList items={pickSelected(notesJson?.kleshas)} />
+                  </ReadOnlyField>
+                  <ReadOnlyField label="Chakras">
+                    <BadgeList items={pickSelected(notesJson?.chakras)} />
+                  </ReadOnlyField>
+                  <ReadOnlyField label="Pranayama">
+                    <BadgeList items={pickSelected(notesJson?.pranayama)} />
+                  </ReadOnlyField>
+                  <ReadOnlyField label="Other Mindfulness" value={notesJson?.otherMindfulness || "—"} />
+                  <ReadOnlyField label="Other Pranayama" value={notesJson?.otherPranayama || "—"} />
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Freeform Notes">
+                <ReadOnlyArea label="Assessment Summary" value={data.assessment} />
+                {!notesJson && (
+                  <ReadOnlyArea
+                    label="Raw Notes"
+                    value={typeof data.notes === "string" ? data.notes : JSON.stringify(data.notes)}
+                  />
+                )}
+              </SectionCard>
             </>
           )}
 
+          {/* ============= INTAKE (read-only form) ============= */}
           {type?.toLowerCase() === "intake" && (
             <>
-              <Section title="Intake">
-                <div className="space-y-2">
-                  <KV label="Date Submitted">{fmtDate(data.dateSubmitted)}</KV>
-                  <KV label="Practiced Yoga Before">{yn(data.practicedYogaBefore)}</KV>
-                  <KV label="Last Practiced">{fmtDate(data.lastPracticedDate)}</KV>
-                  <KV label="Frequency">{data.yogaFrequency}</KV>
-                  <KV label="Styles">{data.yogaStyles}</KV>
-                  <KV label="Other Style">{data.yogaStyleOther}</KV>
-                  <KV label="Goals">{data.yogaGoals}</KV>
-                  <KV label="Other Goals">{data.yogaGoalsOther}</KV>
-                  <KV label="Goals Explanation">{data.yogaGoalsExplanation}</KV>
-                  <KV label="Interests">{data.yogaInterests}</KV>
-                  <KV label="Other Interests">{data.yogaInterestsOther}</KV>
-                  <KV label="Activity Level">{data.activityLevel}</KV>
-                  <KV label="Stress Level">{data.stressLevel ?? "—"}</KV>
+              <SectionCard title="Confidential Information">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <ReadOnlyField label="First Name" value={patient?.firstName} />
+                  <ReadOnlyField label="Last Name" value={patient?.lastName} />
+                  <ReadOnlyField label="Date of Birth" value={fmtDate(patient?.dateOfBirth)} />
+                  <ReadOnlyField label="Email" value={patient?.email} />
+                  <ReadOnlyField label="Address" value={patient?.address} />
+                  <ReadOnlyField label="City" value={patient?.city} />
+                  <ReadOnlyField label="State" value={patient?.state} />
+                  <ReadOnlyField label="Zip Code" value={patient?.zipCode} />
+                  <ReadOnlyField label="Home Phone" value={patient?.homePhoneNumber} />
+                  <ReadOnlyField label="Cell Phone" value={patient?.cellPhoneNumber} />
+                  <ReadOnlyField label="Work Phone" value={patient?.workPhoneNumber} />
+                  <ReadOnlyField label="Emergency Contact" value={patient?.emergencyContactName} />
+                  <ReadOnlyField label="Emergency Phone" value={patient?.emergencyContactPhone} />
+                  <ReadOnlyField label="Referred By" value={patient?.referredBy} />
                 </div>
-              </Section>
+              </SectionCard>
 
-              <Section title="Health History">
-                <div className="grid sm:grid-cols-2 gap-2">
-                  {data.healthHistory ? (
-                    <>
-                      <KV label="Anxiety/Depression">{yn(data.healthHistory.anxietyDepression)}</KV>
-                      <KV label="Arthritis/Bursitis">{yn(data.healthHistory.arthritisBursitis)}</KV>
-                      <KV label="Asthma">{yn(data.healthHistory.asthma)}</KV>
-                      <KV label="Autoimmune">{yn(data.healthHistory.autoimmune)}</KV>
-                      <KV label="Back Problems">{yn(data.healthHistory.backProblems)}</KV>
-                      <KV label="Blood Pressure">{yn(data.healthHistory.bloodPressure)}</KV>
-                      <KV label="Broken Bones">{yn(data.healthHistory.brokenBones)}</KV>
-                      <KV label="Cancer">{yn(data.healthHistory.cancer)}</KV>
-                      <KV label="Diabetes">{yn(data.healthHistory.diabetes)}</KV>
-                      <KV label="Disc Problems">{yn(data.healthHistory.discProblems)}</KV>
-                      <KV label="Heart Conditions">{yn(data.healthHistory.heartConditions)}</KV>
-                      <KV label="Insomnia">{yn(data.healthHistory.insomnia)}</KV>
-                      <KV label="Muscle Strain">{yn(data.healthHistory.muscleStrain)}</KV>
-                      <KV label="Numbness/Tingling">{yn(data.healthHistory.numbnessTingling)}</KV>
-                      <KV label="Osteoporosis">{yn(data.healthHistory.osteoporosis)}</KV>
-                      <KV label="Pregnancy">{yn(data.healthHistory.pregnancy)}</KV>
-                      <KV label="Scoliosis">{yn(data.healthHistory.scoliosis)}</KV>
-                      <KV label="Seizures">{yn(data.healthHistory.seizures)}</KV>
-                      <KV label="Stroke">{yn(data.healthHistory.stroke)}</KV>
-                      <KV label="Surgery">{yn(data.healthHistory.surgery)}</KV>
-                      <KV label="Medications">{yn(data.healthHistory.medications)}</KV>
-                      <KV label="Medications List">{data.healthHistory.medicationsList}</KV>
-                      <KV label="Additional Notes">{data.healthHistory.additionalNotes}</KV>
-                    </>
-                  ) : (
-                    <div className="text-sm text-gray-600">No health history provided.</div>
-                  )}
+              <SectionCard title="Yoga Experience & Goals">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <ReadOnlyField label="Practiced Yoga Before" value={yn(data.practicedYogaBefore)} />
+                  <ReadOnlyField label="Last Practiced" value={fmtDate(data.lastPracticedDate)} />
+                  <ReadOnlyField label="Frequency" value={data.yogaFrequency || "—"} />
+                  <ReadOnlyField label="Styles">
+                    <BadgeList items={data.yogaStyles} />
+                  </ReadOnlyField>
+                  <ReadOnlyField label="Goals">
+                    <BadgeList items={data.yogaGoals} />
+                  </ReadOnlyField>
+                  <ReadOnlyField label="Interests">
+                    <BadgeList items={data.yogaInterests} />
+                  </ReadOnlyField>
+                  <ReadOnlyArea label="Goals Explanation" value={data.yogaGoalsExplanation} />
                 </div>
-              </Section>
+              </SectionCard>
+
+              <SectionCard title="Lifestyle & Fitness">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <ReadOnlyField label="Activity Level" value={data.activityLevel} />
+                  <ReadOnlyField label="Stress Level" value={data.stressLevel ?? "—"} />
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Health History">
+                <CheckboxGrid
+                  title="Conditions"
+                  items={HEALTH_HISTORY_FIELDS.map(({ key, label }) => ({
+                    label,
+                    checked: data.healthHistory ? !!data.healthHistory[key] : false,
+                  }))}
+                />
+                <div className="grid sm:grid-cols-2 gap-4 mt-4">
+                  <ReadOnlyArea
+                    label="Medications"
+                    value={
+                      data.healthHistory?.medications
+                        ? data.healthHistory?.medicationsList || "Yes (unspecified)"
+                        : data.healthHistory
+                        ? "No"
+                        : "—"
+                    }
+                  />
+                  <ReadOnlyArea
+                    label="Additional Notes"
+                    value={data.healthHistory?.additionalNotes}
+                  />
+                  {data.healthHistory?.pregnancyEdd && (
+                    <ReadOnlyField
+                      label="Pregnancy EDD"
+                      value={fmtDate(data.healthHistory.pregnancyEdd)}
+                    />
+                  )}
+                  <ReadOnlyArea
+                    label="Other / Explain"
+                    value={data.healthHistory?.otherConditionsExplanation}
+                  />
+                </div>
+              </SectionCard>
             </>
           )}
         </div>
