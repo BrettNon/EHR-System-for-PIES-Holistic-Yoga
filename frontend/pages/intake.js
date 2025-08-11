@@ -8,65 +8,65 @@ import { apiFetch } from "../utils/api";
 
 /** 50 U.S. states (two-letter codes) */
 const US_STATES = [
-  { abbr: "AL", name: "Alabama" }, { abbr: "AK", name: "Alaska" },
-  { abbr: "AZ", name: "Arizona" }, { abbr: "AR", name: "Arkansas" },
-  { abbr: "CA", name: "California" }, { abbr: "CO", name: "Colorado" },
-  { abbr: "CT", name: "Connecticut" }, { abbr: "DE", name: "Delaware" },
-  { abbr: "FL", name: "Florida" }, { abbr: "GA", name: "Georgia" },
-  { abbr: "HI", name: "Hawaii" }, { abbr: "ID", name: "Idaho" },
-  { abbr: "IL", name: "Illinois" }, { abbr: "IN", name: "Indiana" },
-  { abbr: "IA", name: "Iowa" }, { abbr: "KS", name: "Kansas" },
-  { abbr: "KY", name: "Kentucky" }, { abbr: "LA", name: "Louisiana" },
-  { abbr: "ME", name: "Maine" }, { abbr: "MD", name: "Maryland" },
-  { abbr: "MA", name: "Massachusetts" }, { abbr: "MI", name: "Michigan" },
-  { abbr: "MN", name: "Minnesota" }, { abbr: "MS", name: "Mississippi" },
-  { abbr: "MO", name: "Missouri" }, { abbr: "MT", name: "Montana" },
-  { abbr: "NE", name: "Nebraska" }, { abbr: "NV", name: "Nevada" },
-  { abbr: "NH", name: "New Hampshire" }, { abbr: "NJ", name: "New Jersey" },
-  { abbr: "NM", name: "New Mexico" }, { abbr: "NY", name: "New York" },
-  { abbr: "NC", name: "North Carolina" }, { abbr: "ND", name: "North Dakota" },
-  { abbr: "OH", name: "Ohio" }, { abbr: "OK", name: "Oklahoma" },
-  { abbr: "OR", name: "Oregon" }, { abbr: "PA", name: "Pennsylvania" },
-  { abbr: "RI", name: "Rhode Island" }, { abbr: "SC", name: "South Carolina" },
-  { abbr: "SD", name: "South Dakota" }, { abbr: "TN", name: "Tennessee" },
-  { abbr: "TX", name: "Texas" }, { abbr: "UT", name: "Utah" },
-  { abbr: "VT", name: "Vermont" }, { abbr: "VA", name: "Virginia" },
-  { abbr: "WA", name: "Washington" }, { abbr: "WV", name: "West Virginia" },
-  { abbr: "WI", name: "Wisconsin" }, { abbr: "WY", name: "Wyoming" },
+    {abbr: "AL", name: "Alabama"}, {abbr: "AK", name: "Alaska"},
+    {abbr: "AZ", name: "Arizona"}, {abbr: "AR", name: "Arkansas"},
+    {abbr: "CA", name: "California"}, {abbr: "CO", name: "Colorado"},
+    {abbr: "CT", name: "Connecticut"}, {abbr: "DE", name: "Delaware"},
+    {abbr: "FL", name: "Florida"}, {abbr: "GA", name: "Georgia"},
+    {abbr: "HI", name: "Hawaii"}, {abbr: "ID", name: "Idaho"},
+    {abbr: "IL", name: "Illinois"}, {abbr: "IN", name: "Indiana"},
+    {abbr: "IA", name: "Iowa"}, {abbr: "KS", name: "Kansas"},
+    {abbr: "KY", name: "Kentucky"}, {abbr: "LA", name: "Louisiana"},
+    {abbr: "ME", name: "Maine"}, {abbr: "MD", name: "Maryland"},
+    {abbr: "MA", name: "Massachusetts"}, {abbr: "MI", name: "Michigan"},
+    {abbr: "MN", name: "Minnesota"}, {abbr: "MS", name: "Mississippi"},
+    {abbr: "MO", name: "Missouri"}, {abbr: "MT", name: "Montana"},
+    {abbr: "NE", name: "Nebraska"}, {abbr: "NV", name: "Nevada"},
+    {abbr: "NH", name: "New Hampshire"}, {abbr: "NJ", name: "New Jersey"},
+    {abbr: "NM", name: "New Mexico"}, {abbr: "NY", name: "New York"},
+    {abbr: "NC", name: "North Carolina"}, {abbr: "ND", name: "North Dakota"},
+    {abbr: "OH", name: "Ohio"}, {abbr: "OK", name: "Oklahoma"},
+    {abbr: "OR", name: "Oregon"}, {abbr: "PA", name: "Pennsylvania"},
+    {abbr: "RI", name: "Rhode Island"}, {abbr: "SC", name: "South Carolina"},
+    {abbr: "SD", name: "South Dakota"}, {abbr: "TN", name: "Tennessee"},
+    {abbr: "TX", name: "Texas"}, {abbr: "UT", name: "Utah"},
+    {abbr: "VT", name: "Vermont"}, {abbr: "VA", name: "Virginia"},
+    {abbr: "WA", name: "Washington"}, {abbr: "WV", name: "West Virginia"},
+    {abbr: "WI", name: "Wisconsin"}, {abbr: "WY", name: "Wyoming"},
 ];
 
 const yogaStyles = [
-  "Hatha", "Ashtanga", "Vinyasa/Flow", "Iyengar", "Power", "Anusara",
-  "Bikram/Hot", "Forrest", "Kundalini", "Gentle", "Restorative", "Yin"
+    "Hatha", "Ashtanga", "Vinyasa/Flow", "Iyengar", "Power", "Anusara",
+    "Bikram/Hot", "Forrest", "Kundalini", "Gentle", "Restorative", "Yin"
 ];
 
 const activityLevels = [
-  "Sedentary/Very inactive", "Somewhat inactive", "Average",
-  "Somewhat active", "Extremely active"
+    "Sedentary/Very inactive", "Somewhat inactive", "Average",
+    "Somewhat active", "Extremely active"
 ];
 
 const physicalHistoryOptions = [
-  { label: "Broken/Dislocated bones", key: "brokenBones" },
-  { label: "Muscle strain/sprain", key: "muscleStrain" },
-  { label: "Arthritis/Bursitis", key: "arthritisBursitis" },
-  { label: "Disc problems", key: "discProblems" },
-  { label: "Scoliosis", key: "scoliosis" },
-  { label: "Back problems", key: "backProblems" },
-  { label: "Osteoporosis", key: "osteoporosis" },
-  { label: "Diabetes (type 1 or 2)", key: "diabetes" },
-  { label: "High/Low blood pressure", key: "bloodPressure" },
-  { label: "Insomnia", key: "insomnia" },
-  { label: "Anxiety/Depression", key: "anxietyDepression" },
-  { label: "Asthma / Short breath", key: "asthma" },
-  { label: "Numbness / Tingling", key: "numbnessTingling" },
-  { label: "Cancer", key: "cancer" },
-  { label: "Seizures", key: "seizures" },
-  { label: "Stroke", key: "stroke" },
-  { label: "Heart conditions / Chest pain", key: "heartConditions" },
-  { label: "Pregnancy", key: "pregnancy" },
-  { label: "Auto-immune condition", key: "autoimmune" },
-  { label: "Surgery", key: "surgery" },
-  { label: "Medications", key: "medications" }
+    {label: "Broken/Dislocated bones", key: "brokenBones"},
+    {label: "Muscle strain/sprain", key: "muscleStrain"},
+    {label: "Arthritis/Bursitis", key: "arthritisBursitis"},
+    {label: "Disc problems", key: "discProblems"},
+    {label: "Scoliosis", key: "scoliosis"},
+    {label: "Back problems", key: "backProblems"},
+    {label: "Osteoporosis", key: "osteoporosis"},
+    {label: "Diabetes (type 1 or 2)", key: "diabetes"},
+    {label: "High/Low blood pressure", key: "bloodPressure"},
+    {label: "Insomnia", key: "insomnia"},
+    {label: "Anxiety/Depression", key: "anxietyDepression"},
+    {label: "Asthma / Short breath", key: "asthma"},
+    {label: "Numbness / Tingling", key: "numbnessTingling"},
+    {label: "Cancer", key: "cancer"},
+    {label: "Seizures", key: "seizures"},
+    {label: "Stroke", key: "stroke"},
+    {label: "Heart conditions / Chest pain", key: "heartConditions"},
+    {label: "Pregnancy", key: "pregnancy"},
+    {label: "Auto-immune condition", key: "autoimmune"},
+    {label: "Surgery", key: "surgery"},
+    {label: "Medications", key: "medications"}
 ];
 
 // same helper used elsewhere
@@ -74,42 +74,42 @@ const sanitizeKey = (str) => str.replace(/[^a-zA-Z0-9]/g, "_");
 
 // ===== formatting + validation helpers =====
 const MAX = {
-  firstName: 100,
-  lastName: 100,
-  address: 255,
-  city: 100,
-  emergencyContactName: 100,
+    firstName: 100,
+    lastName: 100,
+    address: 255,
+    city: 100,
+    emergencyContactName: 100,
 };
 
 const MAX_NOTE = 255;
 
 const digitsOnly = (s = "") => s.replace(/\D/g, "");
 const formatUSPhone = (s = "") => {
-  const d = digitsOnly(s).slice(0, 10);
-  if (d.length < 4) return d;
-  if (d.length < 7) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
-  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+    const d = digitsOnly(s).slice(0, 10);
+    if (d.length < 4) return d;
+    if (d.length < 7) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
 };
 
-function FieldCount({ value, max }) {
-  const count = value?.length ?? 0;
-  const over = count > max;
-  return (
-    <div className={`text-xs text-right mt-1 ${over ? "text-red-600" : "text-gray-400"}`}>
-      {count} / {max}
-    </div>
-  );
+function FieldCount({value, max}) {
+    const count = value?.length ?? 0;
+    const over = count > max;
+    return (
+        <div className={`text-xs text-right mt-1 ${over ? "text-red-600" : "text-gray-400"}`}>
+            {count} / {max}
+        </div>
+    );
 }
 
 export default function IntakeFormPage() {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors, isValid },
-  } = useForm({ mode: "onChange" });
+    const {
+        register,
+        handleSubmit,
+        reset,
+        watch,
+        setValue,
+        formState: {errors, isValid},
+    } = useForm({mode: "onChange"});
 
   const [therapists, setTherapists] = useState([]);
 
@@ -186,43 +186,43 @@ export default function IntakeFormPage() {
   const onSubmit = async (data) => {
     const today = todayYmd;
 
-    const getSelectedOptions = (prefix, options) =>
-      options
-        .filter((opt) => {
-          const key = typeof opt === "string" ? sanitizeKey(opt) : opt.key;
-          return data[prefix] && data[prefix][key];
-        })
-        .map((opt) => (typeof opt === "string" ? opt : opt.label));
+        const getSelectedOptions = (prefix, options) =>
+            options
+                .filter((opt) => {
+                    const key = typeof opt === "string" ? sanitizeKey(opt) : opt.key;
+                    return data[prefix] && data[prefix][key];
+                })
+                .map((opt) => (typeof opt === "string" ? opt : opt.label));
 
     const selectedYogaStyles = getSelectedOptions("styles", yogaStyles);
 
-    const selectedYogaGoals = getSelectedOptions("goals", [
-      "Improve fitness",
-      "Increase well​-being",
-      "Injury rehabilitation",
-      "Positive reinforcement",
-      "Strength training",
-      "Weight management",
-      "Other",
-    ]);
-    const selectedYogaInterests = getSelectedOptions("interests", [
-      "Asana (postures)",
-      "Pranayama (breath work)",
-      "Meditation",
-      "Yoga Philosophy",
-      "Eastern energy systems",
-      "Other",
-    ]);
+        const selectedYogaGoals = getSelectedOptions("goals", [
+            "Improve fitness",
+            "Increase well​-being",
+            "Injury rehabilitation",
+            "Positive reinforcement",
+            "Strength training",
+            "Weight management",
+            "Other",
+        ]);
+        const selectedYogaInterests = getSelectedOptions("interests", [
+            "Asana (postures)",
+            "Pranayama (breath work)",
+            "Meditation",
+            "Yoga Philosophy",
+            "Eastern energy systems",
+            "Other",
+        ]);
 
-    const healthHistory = {};
-    physicalHistoryOptions.forEach(({ key }) => {
-      healthHistory[key] = data.physicalHistory?.[key] || false;
-    });
-    healthHistory.medications = !!data.medications;
-    healthHistory.medicationsList = data.medications || "";
-    healthHistory.additionalNotes = data.additionalDetails || "";
-    healthHistory.pregnancyEdd = data.pregnancyEdd || null;
-    healthHistory.otherConditionsExplanation = data.otherConditionsExplanation || "";
+        const healthHistory = {};
+        physicalHistoryOptions.forEach(({key}) => {
+            healthHistory[key] = data.physicalHistory?.[key] || false;
+        });
+        healthHistory.medications = !!data.medications;
+        healthHistory.medicationsList = data.medications || "";
+        healthHistory.additionalNotes = data.additionalDetails || "";
+        healthHistory.pregnancyEdd = data.pregnancyEdd || null;
+        healthHistory.otherConditionsExplanation = data.otherConditionsExplanation || "";
 
     // Base payload
     const payload = {
@@ -609,105 +609,112 @@ export default function IntakeFormPage() {
         <TextInput label="Referred By" name="referredBy" register={register} className="md:col-span-2" disabled={isExisting} />
       </div>
 
-      {/* --- Therapist --- */}
-      <h3 className="text-lg font-semibold text-brandLavender">Therapist Assignment</h3>
-      <label className="block mb-2 font-medium">Select Therapist (optional)</label>
-      <select {...register("therapistId")} className="border rounded p-2 mb-6">
-        <option value="">-- No Therapist Assigned --</option>
-        {therapists.map((t) => (
-          <option key={t.id} value={t.id}>{t.name}</option>
-        ))}
-      </select>
+            {practicedBefore === "yes" && (
+                <>
+                    <label className="block font-medium mt-4 mb-2">How often do you practice?</label>
+                    <select {...register("practiceFrequency")} className="border rounded p-2">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </>
+            )}
 
-      {/* --- Yoga Experience --- */}
-      <h3 className="text-lg font-semibold text-brandLavender">Yoga Experience & Goals</h3>
-      <label className="block mb-2 font-medium">Have you practiced yoga before?</label>
-      <div className="flex items-center space-x-4">
-        <label className="inline-flex items-center space-x-2">
-          <input type="radio" value="no" {...register("practicedBefore")} />
-          <span>No</span>
-        </label>
-        <label className="inline-flex items-center space-x-2">
-          <input type="radio" value="yes" {...register("practicedBefore")} />
-          <span>Yes (provide date)</span>
-        </label>
-        {practicedBefore === "yes" && (
-          <input
-            type="date"
-            className="border rounded p-1"
-            {...register("lastPracticeDate", {
-              validate: (v) => (!v || v <= todayYmd) || "Date cannot be in the future",
-            })}
-          />
-        )}
-      </div>
+            {/* Yoga styles — ALWAYS visible */}
+            <CheckBoxGroup
+                title="Style(s) of yoga practiced most frequently: (select all that apply)"
+                namePrefix="styles"
+                options={yogaStyles}
+                register={register}
+            />
 
-      {practicedBefore === "yes" && (
-        <>
-          <label className="block font-medium mt-4 mb-2">How often do you practice?</label>
-          <select {...register("practiceFrequency")} className="border rounded p-2">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </>
-      )}
+            <CheckBoxGroup
+                title="Goals / Expectations"
+                namePrefix="goals"
+                options={[
+                    "Improve fitness", "Increase well​-being", "Injury rehabilitation",
+                    "Positive reinforcement", "Strength training", "Weight management", "Other",
+                ]}
+                register={register}
+            />
 
-      {/* Yoga styles — ALWAYS visible */}
-      <CheckBoxGroup
-        title="Style(s) of yoga practiced most frequently: (select all that apply)"
-        namePrefix="styles"
-        options={yogaStyles}
-        register={register}
-      />
+            <CheckBoxGroup
+                title="Personal Yoga Interests"
+                namePrefix="interests"
+                options={[
+                    "Asana (postures)", "Pranayama (breath work)", "Meditation",
+                    "Yoga Philosophy", "Eastern energy systems", "Other",
+                ]}
+                register={register}
+            />
 
-      <CheckBoxGroup
-        title="Goals / Expectations"
-        namePrefix="goals"
-        options={[
-          "Improve fitness", "Increase well​-being", "Injury rehabilitation",
-          "Positive reinforcement", "Strength training", "Weight management", "Other",
-        ]}
-        register={register}
-      />
+            {/* --- Lifestyle & Fitness --- */}
+            <h3 className="text-lg font-semibold text-brandLavender">Lifestyle & Fitness</h3>
+            <label className="block mb-2 font-medium">Current activity level</label>
+            <select {...register("activityLevel")} className="border rounded p-2 mb-4">
+                {activityLevels.map((lvl) => (
+                    <option key={lvl} value={lvl}>{lvl}</option>
+                ))}
+            </select>
 
-      <CheckBoxGroup
-        title="Personal Yoga Interests"
-        namePrefix="interests"
-        options={[
-          "Asana (postures)", "Pranayama (breath work)", "Meditation",
-          "Yoga Philosophy", "Eastern energy systems", "Other",
-        ]}
-        register={register}
-      />
+            {/* Stress level dropdown 1–10 */}
+            <div>
+                <label className="block font-medium mb-1">Stress level (1–10)</label>
+                <select
+                    className="border rounded p-2"
+                    {...register("stressLevel", {
+                        required: false,
+                        validate: (v) => (!v || (Number(v) >= 1 && Number(v) <= 10)) || "Pick 1–10",
+                    })}
+                    defaultValue=""
+                >
+                    <option value="">— Select —</option>
+                    {Array.from({length: 10}, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                    ))}
+                </select>
+                {errors.stressLevel && <p className="text-red-600 text-xs mt-1">{errors.stressLevel.message}</p>}
+            </div>
 
-      {/* --- Lifestyle & Fitness --- */}
-      <h3 className="text-lg font-semibold text-brandLavender">Lifestyle & Fitness</h3>
-      <label className="block mb-2 font-medium">Current activity level</label>
-      <select {...register("activityLevel")} className="border rounded p-2 mb-4">
-        {activityLevels.map((lvl) => (
-          <option key={lvl} value={lvl}>{lvl}</option>
-        ))}
-      </select>
+            <CheckBoxGroup title="Physical History" namePrefix="physicalHistory" options={physicalHistoryOptions}
+                           register={register}/>
+            {/* Other / Explain */}
+            <div>
+                <label className="block font-medium mb-1">Other / Explain</label>
+                <textarea
+                    className="w-full border rounded p-2 mb-1"
+                    rows={4}
+                    maxLength={MAX_NOTE}                           // hard stop in the UI
+                    {...register("otherConditionsExplanation", {   // <-- fixed name to match payload
+                        maxLength: {value: MAX_NOTE, message: `Max ${MAX_NOTE} characters`},
+                    })}
+                />
+                <FieldCount value={watch("otherConditionsExplanation")} max={MAX_NOTE}/>
+                {errors.otherConditionsExplanation && (
+                    <p className="text-red-600 text-xs mt-1">
+                        {errors.otherConditionsExplanation.message}
+                    </p>
+                )}
+            </div>
 
-      {/* Stress level dropdown 1–10 */}
-      <div>
-        <label className="block font-medium mb-1">Stress level (1–10)</label>
-        <select
-          className="border rounded p-2"
-          {...register("stressLevel", {
-            required: false,
-            validate: (v) => (!v || (Number(v) >= 1 && Number(v) <= 10)) || "Pick 1–10",
-          })}
-          defaultValue=""
-        >
-          <option value="">— Select —</option>
-          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
-        {errors.stressLevel && <p className="text-red-600 text-xs mt-1">{errors.stressLevel.message}</p>}
-      </div>
+            {/* Are you currently taking any medications? */}
+            <div>
+                <label className="block font-medium mb-1">
+                    Are you currently taking any medications?
+                </label>
+                <textarea
+                    className="w-full border rounded p-2 mb-1"
+                    rows={3}
+                    maxLength={MAX_NOTE}
+                    {...register("medications", {
+                        maxLength: {value: MAX_NOTE, message: `Max ${MAX_NOTE} characters`},
+                    })}
+                />
+                <FieldCount value={watch("medications")} max={MAX_NOTE}/>
+                {errors.medications && (
+                    <p className="text-red-600 text-xs mt-1">{errors.medications.message}</p>
+                )}
+            </div>
 
       <CheckBoxGroup title="Physical History" namePrefix="physicalHistory" options={physicalHistoryOptions} register={register} />
       {/* Other / Explain */}
