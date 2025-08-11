@@ -14,6 +14,7 @@ public class SoapNoteRequest {
     private String typeOfSession;
     private String conditions;
     private String medications;
+    private String medicationNote;
     private String goals;
     private String diet;
     private String activityLevel;

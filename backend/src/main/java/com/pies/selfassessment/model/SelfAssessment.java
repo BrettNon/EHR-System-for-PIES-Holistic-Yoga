@@ -22,16 +22,19 @@ public class SelfAssessment {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "patient_id")
+    @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
     @ManyToOne
-    @JoinColumn(name = "therapist_id")
+    @JoinColumn(name = "therapist_id", nullable = false)
     private Therapist therapist;
 
     private LocalDate dateOfSession;
     private String goalOfSession;
     private String assessment;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 
     private boolean activeStatus = true;
 }

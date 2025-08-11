@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { TextInput } from "../components/TextInput";
 import { CheckBoxGroup } from "../components/CheckBoxGroup";
 import { SignaturePadField } from "../components/SignaturePadField";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../utils/api";
 
 /** 50 U.S. states (two-letter codes) */
@@ -112,11 +112,19 @@ export default function IntakeFormPage() {
   } = useForm({ mode: "onChange" });
 
   const [therapists, setTherapists] = useState([]);
+
+  // NEW: patient search + selection
+  const [patients, setPatients] = useState([]);
+  const [search, setSearch] = useState("");
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [openList, setOpenList] = useState(false);
+
   const practicedBefore = watch("practicedBefore");
   const todayYmd = new Date().toISOString().split("T")[0];
 
+  // Load therapists
   useEffect(() => {
-    const fetchTherapists = async () => {
+    (async () => {
       try {
         const res = await apiFetch("http://localhost:8080/therapists/active");
         if (!res.ok) throw new Error("Failed to load therapists");
@@ -125,10 +133,56 @@ export default function IntakeFormPage() {
       } catch (err) {
         console.error("Error loading therapists:", err);
       }
-    };
-    fetchTherapists();
+    })();
   }, []);
 
+  // Load patients (you can swap this to a server-side search later)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch("http://localhost:8080/patients?page=0&size=500");
+        if (!res.ok) throw new Error("Failed to load patients");
+        const page = await res.json();
+        setPatients(page.content || []);
+      } catch (err) {
+        console.error("Error loading patients:", err);
+      }
+    })();
+  }, []);
+
+  // When a patient is picked, prefill + lock profile fields (edits belong on the profile page)
+  useEffect(() => {
+    if (!selectedPatient) return;
+    const p = selectedPatient;
+    setValue("firstName", p.firstName || "");
+    setValue("lastName", p.lastName || "");
+    setValue("dob", p.dateOfBirth || "");
+    setValue("address", p.address || "");
+    setValue("city", p.city || "");
+    setValue("state", p.state || "");
+    setValue("zipCode", p.zipCode || "");
+    setValue("email", p.email || "");
+    setValue("homePhone", p.homePhoneNumber ? formatUSPhone(p.homePhoneNumber) : "");
+    setValue("cellPhone", p.cellPhoneNumber ? formatUSPhone(p.cellPhoneNumber) : "");
+    setValue("workPhone", p.workPhoneNumber ? formatUSPhone(p.workPhoneNumber) : "");
+    setValue("emergencyContactName", p.emergencyContactName || "");
+    setValue("emergencyContactPhone", p.emergencyContactPhone ? formatUSPhone(p.emergencyContactPhone) : "");
+    setValue("referredBy", p.referredBy || "");
+  }, [selectedPatient, setValue]);
+
+  // Suggestions
+  const suggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return patients
+      .filter((p) => {
+        const name = `${p.firstName ?? ""} ${p.lastName ?? ""}`.toLowerCase();
+        return name.includes(q);
+      })
+      .slice(0, 10);
+  }, [patients, search]);
+
+  // ===== submit =====
   const onSubmit = async (data) => {
     const today = todayYmd;
 
@@ -140,7 +194,6 @@ export default function IntakeFormPage() {
         })
         .map((opt) => (typeof opt === "string" ? opt : opt.label));
 
-    // Yoga styles are always shown; collect them from the "styles" group.
     const selectedYogaStyles = getSelectedOptions("styles", yogaStyles);
 
     const selectedYogaGoals = getSelectedOptions("goals", [
@@ -171,31 +224,15 @@ export default function IntakeFormPage() {
     healthHistory.pregnancyEdd = data.pregnancyEdd || null;
     healthHistory.otherConditionsExplanation = data.otherConditionsExplanation || "";
 
+    // Base payload
     const payload = {
-      patient: {
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
-        dateOfBirth: data.dob,
-        address: data.address,
-        city: data.city,
-        state: data.state,                       // two-letter code
-        zipCode: digitsOnly(data.zipCode),       // 5 digits
-        email: data.email,
-        homePhoneNumber: digitsOnly(data.homePhone),
-        cellPhoneNumber: digitsOnly(data.cellPhone),
-        workPhoneNumber: digitsOnly(data.workPhone),
-        emergencyContactName: data.emergencyContactName,
-        emergencyContactPhone: digitsOnly(data.emergencyContactPhone),
-        referredBy: data.referredBy,
-        dateCreated: today,
-      },
       therapistId: parseInt(data.therapistId) || null,
       intakeDate: today,
       practicedYogaBefore: data.practicedBefore === "yes",
       lastPracticedDate: data.lastPracticeDate || null,
       yogaFrequency: data.practiceFrequency || null,
       yogaStyles: selectedYogaStyles,
-      yogaStyleOther: "", // kept for backend compatibility; no "Other" input on the UI
+      yogaStyleOther: "",
       yogaGoals: selectedYogaGoals,
       yogaGoalsOther: data.goals?.Other || "",
       yogaGoalsExplanation: data.goalExplanation || "",
@@ -206,6 +243,52 @@ export default function IntakeFormPage() {
       healthHistory,
     };
 
+    // If user selected an existing client → send patientId, otherwise send patient object
+    payload.patient = selectedPatient?.id
+      ? {
+          id: selectedPatient.id,
+          firstName: selectedPatient.firstName || watch("firstName") || "",
+          lastName: selectedPatient.lastName || watch("lastName") || "",
+          dateOfBirth: selectedPatient.dateOfBirth || watch("dob") || null,
+
+          address: selectedPatient.address || "",
+          city: selectedPatient.city || "",
+          state: selectedPatient.state || "",                // should be 2-letter
+          zipCode: (selectedPatient.zipCode || "").replace(/\D/g, "").slice(0, 5),
+
+          email: selectedPatient.email || "",
+          homePhoneNumber: (selectedPatient.homePhoneNumber || "").replace(/\D/g, "").slice(0, 10),
+          cellPhoneNumber: (selectedPatient.cellPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
+          workPhoneNumber: (selectedPatient.workPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
+
+          emergencyContactName: selectedPatient.emergencyContactName || "",
+          emergencyContactPhone: (selectedPatient.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
+
+          referredBy: selectedPatient.referredBy || "",
+          dateCreated: selectedPatient.dateCreated || selectedPatient.createdAt || undefined,
+        }
+      : {
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          dateOfBirth: data.dob,
+
+          address: data.address,
+          city: data.city,
+          state: data.state,                                // two-letter code
+          zipCode: (data.zipCode || "").replace(/\D/g, "").slice(0, 5),
+
+          email: data.email,
+          homePhoneNumber: (data.homePhone || "").replace(/\D/g, "").slice(0, 10),
+          cellPhoneNumber: (data.cellPhone || "").replace(/\D/g, "").slice(0, 10),
+          workPhoneNumber: (data.workPhone || "").replace(/\D/g, "").slice(0, 10),
+
+          emergencyContactName: data.emergencyContactName,
+          emergencyContactPhone: (data.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
+
+          referredBy: data.referredBy,
+          dateCreated: today,
+        };
+
     try {
       const res = await apiFetch("http://localhost:8080/intakes", {
         method: "POST",
@@ -213,30 +296,119 @@ export default function IntakeFormPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to submit intake form");
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error(t || "Failed to submit intake form");
+      }
       alert("Form submitted successfully!");
+      setSelectedPatient(null);
+      setSearch("");
       reset();
     } catch (err) {
       console.error("Submission error:", err);
-      alert("Error submitting intake form.");
+      alert(err.message || "Error submitting intake form.");
     }
   };
 
+  // Conditional required rules: if an existing client is selected, don't require profile fields here
+  const isExisting = !!selectedPatient;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
+      {/* --- Client picker --- */}
+      <div>
+        <label className="block text-sm font-medium text-brandLavender mb-1">Client</label>
+        {!isExisting && (
+          <div className="relative">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setOpenList(true); }}
+              onFocus={() => setOpenList(true)}
+              placeholder="Search existing clients by name…"
+              className="w-full border rounded p-2"
+              aria-autocomplete="list"
+              aria-expanded={openList}
+            />
+            {openList && (suggestions.length > 0 || search.trim()) && (
+              <div
+                className="absolute z-10 mt-1 w-full bg-white border rounded shadow-md max-h-64 overflow-auto"
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                {suggestions.map((p) => {
+                  const name = `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || `#${p.id}`;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-gray-50"
+                      onClick={() => { setSelectedPatient(p); setOpenList(false); }}
+                    >
+                      <div className="font-medium">{name}</div>
+                      <div className="text-xs text-gray-500">
+                        DOB: {p.dateOfBirth || "—"} • Since: {p.dateCreated || p.createdAt || "—"}
+                      </div>
+                    </button>
+                  );
+                })}
+                {/* create-new affordance */}
+                <div className="border-t" />
+                <button
+                  type="button"
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 text-brandLavender"
+                  onClick={() => {
+                    // optionally prefill first/last from what they typed
+                    const parts = search.trim().split(/\s+/);
+                    setValue("firstName", parts[0] || "");
+                    setValue("lastName", parts.slice(1).join(" ") || "");
+                    setSelectedPatient(null);
+                    setOpenList(false);
+                  }}
+                >
+                  + Create new client{search.trim() ? ` named “${search.trim()}”` : ""}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isExisting && (
+          <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded p-2 mt-1">
+            <div className="text-sm">
+              Using existing client:{" "}
+              <span className="font-medium">
+                {(selectedPatient.firstName || "") + " " + (selectedPatient.lastName || "")}
+              </span>{" "}
+              (#{selectedPatient.id})
+            </div>
+            <button
+              type="button"
+              className="ml-auto text-sm underline text-brandLavender"
+              onClick={() => { setSelectedPatient(null); setSearch(""); }}
+            >
+              Clear / New client
+            </button>
+          </div>
+        )}
+        <p className="text-xs text-gray-500 mt-1">
+          Selecting a client locks profile fields here. To edit profile details, use the client record page.
+        </p>
+      </div>
+
       {/* --- Personal Info --- */}
       <h2 className="text-xl font-semibold text-brandLavender">Confidential Information</h2>
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Required + char counter */}
+        {/* Required + char counter (conditionally required when creating new) */}
         <div>
           <TextInput
             label="First Name"
             name="firstName"
             register={register}
-            required
+            required={!isExisting}
             maxLength={MAX.firstName}
+            disabled={isExisting}
             {...register("firstName", {
-              required: "First name is required",
+              required: !isExisting ? "First name is required" : false,
               maxLength: { value: MAX.firstName, message: "Too many characters" },
             })}
           />
@@ -249,10 +421,11 @@ export default function IntakeFormPage() {
             label="Last Name"
             name="lastName"
             register={register}
-            required
+            required={!isExisting}
             maxLength={MAX.lastName}
+            disabled={isExisting}
             {...register("lastName", {
-              required: "Last name is required",
+              required: !isExisting ? "Last name is required" : false,
               maxLength: { value: MAX.lastName, message: "Too many characters" },
             })}
           />
@@ -265,9 +438,10 @@ export default function IntakeFormPage() {
           name="dob"
           type="date"
           register={register}
-          required
+          required={!isExisting}
+          disabled={isExisting}
           {...register("dob", {
-            required: "Date of birth is required",
+            required: !isExisting ? "Date of birth is required" : false,
             validate: (v) => (!v || v <= todayYmd) || "DOB cannot be in the future",
           })}
         />
@@ -278,11 +452,12 @@ export default function IntakeFormPage() {
             label="Address"
             name="address"
             register={register}
-            required
+            required={!isExisting}
             maxLength={MAX.address}
             className="w-full"
+            disabled={isExisting}
             {...register("address", {
-              required: "Address is required",
+              required: !isExisting ? "Address is required" : false,
               maxLength: { value: MAX.address, message: "Too many characters" },
             })}
           />
@@ -296,10 +471,11 @@ export default function IntakeFormPage() {
             label="City"
             name="city"
             register={register}
-            required
+            required={!isExisting}
             maxLength={MAX.city}
+            disabled={isExisting}
             {...register("city", {
-              required: "City is required",
+              required: !isExisting ? "City is required" : false,
               maxLength: { value: MAX.city, message: "Too many characters" },
             })}
           />
@@ -312,8 +488,9 @@ export default function IntakeFormPage() {
           <label className="block font-medium mb-1">State</label>
           <select
             className="border rounded p-2 w-full"
-            {...register("state", { required: "State is required" })}
+            {...register("state", { required: !isExisting ? "State is required" : false })}
             defaultValue=""
+            disabled={isExisting}
           >
             <option value="" disabled>— Select —</option>
             {US_STATES.map((s) => (
@@ -330,8 +507,9 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="#####"
+            disabled={isExisting}
             {...register("zipCode", {
-              required: "Zip code is required",
+              required: !isExisting ? "Zip code is required" : false,
               pattern: { value: /^\d{5}$/, message: "Use exactly 5 digits" },
               onChange: (e) => { e.target.value = digitsOnly(e.target.value).slice(0, 5); },
             })}
@@ -346,6 +524,7 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="(555) 555-5555"
+            disabled={isExisting}
             {...register("homePhone", {
               onChange: (e) => { e.target.value = formatUSPhone(e.target.value); },
               pattern: { value: /^\(?\d{3}\)?[ ]?\d{3}-\d{4}$/, message: "Format: (555) 555-5555" },
@@ -360,6 +539,7 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="(555) 555-5555"
+            disabled={isExisting}
             {...register("cellPhone", {
               onChange: (e) => { e.target.value = formatUSPhone(e.target.value); },
               pattern: { value: /^\(?\d{3}\)?[ ]?\d{3}-\d{4}$/, message: "Format: (555) 555-5555" },
@@ -374,6 +554,7 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="(555) 555-5555"
+            disabled={isExisting}
             {...register("workPhone", {
               onChange: (e) => { e.target.value = formatUSPhone(e.target.value); },
               pattern: { value: /^\(?\d{3}\)?[ ]?\d{3}-\d{4}$/, message: "Format: (555) 555-5555" },
@@ -382,9 +563,9 @@ export default function IntakeFormPage() {
           {errors.workPhone && <p className="text-red-600 text-xs mt-1">{errors.workPhone.message}</p>}
         </div>
 
-        <TextInput label="Email" name="email" type="email" register={register} />
+        <TextInput label="Email" name="email" type="email" register={register} disabled={isExisting} />
 
-        <TextInput label="Occupation" name="occupation" register={register} />
+        <TextInput label="Occupation" name="occupation" register={register} disabled={isExisting} />
 
         {/* Emergency contact name + counter */}
         <div>
@@ -392,10 +573,11 @@ export default function IntakeFormPage() {
             label="Emergency Contact Name"
             name="emergencyContactName"
             register={register}
-            required
+            required={!isExisting}
             maxLength={MAX.emergencyContactName}
+            disabled={isExisting}
             {...register("emergencyContactName", {
-              required: "Emergency contact name is required",
+              required: !isExisting ? "Emergency contact name is required" : false,
               maxLength: { value: MAX.emergencyContactName, message: "Too many characters" },
             })}
           />
@@ -412,8 +594,9 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="(555) 555-5555"
+            disabled={isExisting}
             {...register("emergencyContactPhone", {
-              required: "Emergency contact phone is required",
+              required: !isExisting ? "Emergency contact phone is required" : false,
               onChange: (e) => { e.target.value = formatUSPhone(e.target.value); },
               pattern: { value: /^\(?\d{3}\)?[ ]?\d{3}-\d{4}$/, message: "Format: (555) 555-5555" },
             })}
@@ -423,7 +606,7 @@ export default function IntakeFormPage() {
           )}
         </div>
 
-        <TextInput label="Referred By" name="referredBy" register={register} className="md:col-span-2" />
+        <TextInput label="Referred By" name="referredBy" register={register} className="md:col-span-2" disabled={isExisting} />
       </div>
 
       {/* --- Therapist --- */}
@@ -533,8 +716,8 @@ export default function IntakeFormPage() {
         <textarea
           className="w-full border rounded p-2 mb-1"
           rows={4}
-          maxLength={MAX_NOTE}                           // hard stop in the UI
-          {...register("otherConditionsExplanation", {   // <-- fixed name to match payload
+          maxLength={MAX_NOTE}
+          {...register("otherConditionsExplanation", {
             maxLength: { value: MAX_NOTE, message: `Max ${MAX_NOTE} characters` },
           })}
         />
@@ -546,7 +729,7 @@ export default function IntakeFormPage() {
         )}
       </div>
 
-      {/* Are you currently taking any medications? */}
+      {/* Medications */}
       <div>
         <label className="block font-medium mb-1">
           Are you currently taking any medications?
@@ -565,7 +748,7 @@ export default function IntakeFormPage() {
         )}
       </div>
 
-      {/* Additional details / Anything else to share */}
+      {/* Additional details */}
       <div>
         <label className="block font-medium mb-1">
           Additional details / Anything else to share
@@ -596,13 +779,17 @@ export default function IntakeFormPage() {
       <div className="flex items-center gap-4">
         <button
           type="submit"
-          disabled={!isValid}
+          disabled={!isValid && !selectedPatient}  // allow submit with existing client even if profile fields disabled
           className="bg-brandLavender text-white px-6 py-2 rounded-md disabled:opacity-50"
-          title={!isValid ? "Fix validation errors before submitting" : ""}
+          title={!isValid && !selectedPatient ? "Fix validation errors before submitting" : ""}
         >
           Save
         </button>
-        <button type="button" onClick={() => reset()} className="underline text-brandLavender">
+        <button
+          type="button"
+          onClick={() => { reset(); setSelectedPatient(null); setSearch(""); }}
+          className="underline text-brandLavender"
+        >
           Reset
         </button>
       </div>

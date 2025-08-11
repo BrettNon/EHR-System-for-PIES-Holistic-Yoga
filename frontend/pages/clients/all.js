@@ -1,29 +1,107 @@
 // pages/clients/all.js
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { SearchIcon, Trash2Icon } from "lucide-react";
+
+// add near top of the file
+const STATE_MAP = {
+  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+  colorado: "CO", connecticut: "CT", delaware: "DE", "district of columbia": "DC",
+  florida: "FL", georgia: "GA", hawaii: "HI", idaho: "ID", illinois: "IL",
+  indiana: "IN", iowa: "IA", kansas: "KS", kentucky: "KY", louisiana: "LA",
+  maine: "ME", maryland: "MD", massachusetts: "MA", michigan: "MI", minnesota: "MN",
+  mississippi: "MS", missouri: "MO", montana: "MT", nebraska: "NE", nevada: "NV",
+  "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
+  "north carolina": "NC", "north dakota": "ND", ohio: "OH", oklahoma: "OK",
+  oregon: "OR", pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
+  "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT", vermont: "VT",
+  virginia: "VA", washington: "WA", "west virginia": "WV", wisconsin: "WI", wyoming: "WY"
+};
+const normalizeState = (v) => {
+  if (!v) return "";
+  const t = v.trim();
+  const code = t.toUpperCase();
+  if (/^[A-Z]{2}$/.test(code)) return code;
+  return STATE_MAP[t.toLowerCase()] || code.slice(0, 2);
+};
+
+const US_STATES = [
+  { code: "AL", name: "Alabama" }, { code: "AK", name: "Alaska" }, { code: "AZ", name: "Arizona" },
+  { code: "AR", name: "Arkansas" }, { code: "CA", name: "California" }, { code: "CO", name: "Colorado" },
+  { code: "CT", name: "Connecticut" }, { code: "DE", name: "Delaware" }, { code: "DC", name: "District of Columbia" },
+  { code: "FL", name: "Florida" }, { code: "GA", name: "Georgia" }, { code: "HI", name: "Hawaii" },
+  { code: "ID", name: "Idaho" }, { code: "IL", name: "Illinois" }, { code: "IN", name: "Indiana" },
+  { code: "IA", name: "Iowa" }, { code: "KS", name: "Kansas" }, { code: "KY", name: "Kentucky" },
+  { code: "LA", name: "Louisiana" }, { code: "ME", name: "Maine" }, { code: "MD", name: "Maryland" },
+  { code: "MA", name: "Massachusetts" }, { code: "MI", name: "Michigan" }, { code: "MN", name: "Minnesota" },
+  { code: "MS", name: "Mississippi" }, { code: "MO", name: "Missouri" }, { code: "MT", name: "Montana" },
+  { code: "NE", name: "Nebraska" }, { code: "NV", name: "Nevada" }, { code: "NH", name: "New Hampshire" },
+  { code: "NJ", name: "New Jersey" }, { code: "NM", name: "New Mexico" }, { code: "NY", name: "New York" },
+  { code: "NC", name: "North Carolina" }, { code: "ND", name: "North Dakota" }, { code: "OH", name: "Ohio" },
+  { code: "OK", name: "Oklahoma" }, { code: "OR", name: "Oregon" }, { code: "PA", name: "Pennsylvania" },
+  { code: "RI", name: "Rhode Island" }, { code: "SC", name: "South Carolina" }, { code: "SD", name: "South Dakota" },
+  { code: "TN", name: "Tennessee" }, { code: "TX", name: "Texas" }, { code: "UT", name: "Utah" },
+  { code: "VT", name: "Vermont" }, { code: "VA", name: "Virginia" }, { code: "WA", name: "Washington" },
+  { code: "WV", name: "West Virginia" }, { code: "WI", name: "Wisconsin" }, { code: "WY", name: "Wyoming" },
+];
+
 
 export default function AllClientsPage() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // search + filters
   const [query, setQuery] = useState("");
+
+  // age slider (dual-range) 1–120
+  const MIN_AGE = 1;
+  const MAX_AGE = 120;
+  const [ageMin, setAgeMin] = useState(MIN_AGE);
+  const [ageMax, setAgeMax] = useState(MAX_AGE);
+
+  // client since (YYYY-MM-DD)
+  const [sinceFrom, setSinceFrom] = useState("");
+  const [sinceTo, setSinceTo] = useState("");
+
+  // sort: alpha, age, recency
+  const [sortBy, setSortBy] = useState("alpha"); // 'alpha' | 'age' | 'recency'
+
+  // create modal
+  const [openCreate, setOpenCreate] = useState(false);
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    dateOfBirth: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    email: "",
+    homePhoneNumber: "",
+    cellPhoneNumber: "",
+    workPhoneNumber: "",
+    emergencyContactName: "",
+    emergencyContactPhone: "",
+    referredBy: "",
+  });
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("pies-token") : null;
+  const therapistId =
+    typeof window !== "undefined"
+      ? Number(localStorage.getItem("therapistId") || "1")
+      : 1;
 
-  // ---------- date helpers (same as Assigned) ----------
-  // turn "YYYY-MM-DD" into a real Date object at UTC so it won't shift
+  // ---------- helpers (same as Assigned) ----------
   function parseYmd(ymd) {
     if (!ymd) return null;
     const [y, m, d] = ymd.split("-").map(Number);
-    return new Date(Date.UTC(y, m - 1, d + 1)); // keep the same +1 workaround you used
+    return new Date(Date.UTC(y, m - 1, d + 1)); // keep UTC fudge
   }
-
   const fmtMonthYear = (ymd) =>
     ymd
       ? new Intl.DateTimeFormat(undefined, { year: "numeric", month: "long" }).format(parseYmd(ymd))
       : "—";
-
   const fmtFullDate = (ymd) =>
     ymd
       ? new Intl.DateTimeFormat(undefined, {
@@ -32,31 +110,46 @@ export default function AllClientsPage() {
           day: "numeric",
         }).format(parseYmd(ymd))
       : "—";
+  const toYmd = (s) => (typeof s === "string" ? s.slice(0, 10) : "");
+  const calcAgeFromYmd = (ymd) => {
+    if (!ymd) return null;
+    const [y, m, d] = ymd.split("-").map(Number);
+    const today = new Date();
+    let age = today.getFullYear() - y;
+    const mDiff = today.getMonth() + 1 - m;
+    const dDiff = today.getDate() - d;
+    if (mDiff < 0 || (mDiff === 0 && dDiff < 0)) age--;
+    return age;
+  };
 
   // ---------- fetch ALL patients ----------
-  useEffect(() => {
+  const loadClients = async () => {
     if (!token) return;
-    (async () => {
-      try {
-        const res = await fetch("http://localhost:8080/patients?page=0&size=100", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to load patients");
-        const page = await res.json();
-        const mapped = page.content.map((p) => ({
-          id: p.id,
-          name: `${p.firstName} ${p.lastName}`,
-          since: p.dateCreated || p.createdAt,
-          dob: p.dateOfBirth,
-        }));
-        setClients(mapped);
-      } catch (e) {
-        console.error(e);
-        alert(e.message);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:8080/patients?page=0&size=100", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to load patients");
+      const page = await res.json();
+      const mapped = page.content.map((p) => ({
+        id: p.id,
+        name: `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim(),
+        since: toYmd(p.dateCreated || p.createdAt || ""),
+        dob: toYmd(p.dateOfBirth || ""),
+      }));
+      setClients(mapped);
+    } catch (e) {
+      console.error(e);
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadClients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   // ---------- delete helper ----------
@@ -83,43 +176,263 @@ export default function AllClientsPage() {
     }
   };
 
-  const filtered = clients.filter((c) =>
-    c.name.toLowerCase().includes(query.toLowerCase())
-  );
+  // ---------- CREATE helper ----------
+  const createClient = async (e) => {
+    e.preventDefault();
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.dateOfBirth) {
+      alert("First name, last name, and date of birth are required.");
+      return;
+    }
+    try {
+      const res = await fetch("http://localhost:8080/patients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...form,
+          state: normalizeState(form.state),
+          therapistId, // associate to current therapist
+        }),
+      });
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(msg || "Create failed");
+      }
+      setOpenCreate(false);
+      setForm({
+        firstName: "",
+        lastName: "",
+        dateOfBirth: "",
+        address: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        email: "",
+        homePhoneNumber: "",
+        cellPhoneNumber: "",
+        workPhoneNumber: "",
+        emergencyContactName: "",
+        emergencyContactPhone: "",
+        referredBy: "",
+      });
+      await loadClients();
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  };
+
+  // ---------- filtering + sorting ----------
+  const processed = useMemo(() => {
+    const q = query.trim().toLowerCase();
+
+    const filtered = clients.filter((c) => {
+      if (q && !c.name.toLowerCase().includes(q)) return false;
+
+      const age = calcAgeFromYmd(c.dob);
+      if (age != null) {
+        if (age < ageMin || age > ageMax) return false;
+      } else {
+        if (ageMin !== MIN_AGE || ageMax !== MAX_AGE) return false;
+      }
+
+      const since = c.since;
+      if (sinceFrom && (!since || since < sinceFrom)) return false;
+      if (sinceTo && (!since || since > sinceTo)) return false;
+
+      return true;
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortBy === "alpha") {
+        return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
+      }
+      if (sortBy === "age") {
+        const aa = calcAgeFromYmd(a.dob);
+        const ab = calcAgeFromYmd(b.dob);
+        if (aa == null && ab == null) return 0;
+        if (aa == null) return 1;
+        if (ab == null) return -1;
+        return aa - ab; // youngest → oldest
+      }
+      if (sortBy === "recency") {
+        const sa = a.since || "";
+        const sb = b.since || "";
+        if (!sa && !sb) return 0;
+        if (!sa) return 1;
+        if (!sb) return -1;
+        return sb.localeCompare(sa); // newest → oldest
+      }
+      return 0;
+    });
+
+    return sorted;
+  }, [clients, query, ageMin, ageMax, sinceFrom, sinceTo, sortBy]);
+
+  const resetFilters = () => {
+    setQuery("");
+    setAgeMin(MIN_AGE);
+    setAgeMax(MAX_AGE);
+    setSinceFrom("");
+    setSinceTo("");
+    setSortBy("alpha");
+  };
+
+  const handleAgeMin = (v) => setAgeMin(Math.max(MIN_AGE, Math.min(Number(v), ageMax)));
+  const handleAgeMax = (v) => setAgeMax(Math.min(MAX_AGE, Math.max(Number(v), ageMin)));
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <h2 className="text-2xl font-semibold text-brandLavender">All Clients</h2>
-
-      {/* search */}
-      <div className="relative max-w-sm">
-        <input
-          type="text"
-          placeholder="Search clients…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full border rounded pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-brandLavender"
-        />
-        <SearchIcon
-          size={18}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-        />
+      {/* Header with Create */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold text-brandLavender">All Clients</h2>
+        <button
+          onClick={() => setOpenCreate(true)}
+          className="px-4 py-2 rounded bg-brandLavender text-white text-sm"
+        >
+          New client
+        </button>
       </div>
 
+      {/* Filters – one line on md+; scrolls horizontally if cramped */}
+      <div className="flex flex-wrap md:flex-nowrap items-end gap-4 overflow-x-auto pb-2">
+        {/* Search */}
+        <div className="relative w-[280px] shrink-0">
+          <label className="block text-sm font-medium text-brandLavender mb-1">Search</label>
+          <input
+            type="text"
+            placeholder="Search clients…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full border rounded pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-brandLavender"
+          />
+          <SearchIcon
+            size={18}
+            className="absolute left-3 top-[2.35rem] -translate-y-1/2 text-gray-400 pointer-events-none"
+          />
+        </div>
+
+        {/* Age range (dual slider) */}
+        <div className="w-[300px] shrink-0">
+          <label className="block text-sm font-medium text-brandLavender mb-1">
+            Age range ({ageMin} – {ageMax})
+          </label>
+          <div className="relative py-3 w-full">
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-200 rounded" />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 h-1 bg-brandLavender rounded"
+              style={{
+                left: `${((ageMin - MIN_AGE) / (MAX_AGE - MIN_AGE)) * 100}%`,
+                right: `${(1 - (ageMax - MIN_AGE) / (MAX_AGE - MIN_AGE)) * 100}%`,
+              }}
+            />
+            <input
+              type="range"
+              min={MIN_AGE}
+              max={MAX_AGE}
+              value={ageMin}
+              onChange={(e) => handleAgeMin(e.target.value)}
+              className="absolute left-0 right-0 top-1/2 -translate-y-1/2 w-full appearance-none bg-transparent pointer-events-auto"
+            />
+            <input
+              type="range"
+              min={MIN_AGE}
+              max={MAX_AGE}
+              value={ageMax}
+              onChange={(e) => handleAgeMax(e.target.value)}
+              className="absolute left-0 right-0 top-1/2 -translate-y-1/2 w-full appearance-none bg-transparent pointer-events-auto"
+            />
+            <style jsx>{`
+              input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 18px;
+                height: 18px;
+                border-radius: 9999px;
+                background: #7c3aed;
+                border: 2px solid white;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+                cursor: pointer;
+                position: relative;
+              }
+              input[type="range"]::-moz-range-thumb {
+                width: 18px;
+                height: 18px;
+                border-radius: 9999px;
+                background: #7c3aed;
+                border: 2px solid white;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+                cursor: pointer;
+              }
+              input[type="range"] {
+                height: 18px;
+              }
+            `}</style>
+          </div>
+        </div>
+
+        {/* Client since (from/to) */}
+        <div className="shrink-0">
+          <label className="block text-sm font-medium text-brandLavender mb-1">Since</label>
+          <div className="flex gap-3">
+            <input
+              type="date"
+              className="w-[155px] border rounded p-2"
+              value={sinceFrom}
+              onChange={(e) => setSinceFrom(e.target.value)}
+              aria-label="Since from"
+            />
+            <input
+              type="date"
+              className="w-[155px] border rounded p-2"
+              value={sinceTo}
+              onChange={(e) => setSinceTo(e.target.value)}
+              aria-label="Since to"
+            />
+          </div>
+        </div>
+
+        {/* Sort */}
+        <div className="w-[230px] shrink-0">
+          <label className="block text-sm font-medium text-brandLavender mb-1">Sort by</label>
+          <select
+            className="w-full border rounded p-2"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="alpha">Alphabetical (A → Z)</option>
+            <option value="age">Age (youngest → oldest)</option>
+            <option value="recency">Client Since (newest → oldest)</option>
+          </select>
+        </div>
+
+        {/* Reset */}
+        <div className="w-[100px] shrink-0">
+          <button
+            onClick={resetFilters}
+            className="w-full h-[42px] rounded border hover:bg-gray-50 mt-6"
+            title="Clear all filters"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      {/* Results */}
       {loading && <p className="text-center text-gray-500">Loading…</p>}
 
       {!loading && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((cl) => (
+          {processed.map((cl) => (
             <div
               key={cl.id}
               className="bg-white rounded-xl shadow-md hover:shadow-lg transition"
             >
               <div className="p-4 space-y-1">
-                <p className="font-semibold text-lg">{cl.name}</p>
-                <p className="text-sm text-gray-600">
-                  Client since {fmtMonthYear(cl.since)}
-                </p>
+                <p className="font-semibold text-lg">{cl.name || "Unnamed Client"}</p>
+                <p className="text-sm text-gray-600">Client since {fmtMonthYear(cl.since)}</p>
                 <p className="text-sm text-gray-600">DOB: {fmtFullDate(cl.dob)}</p>
               </div>
 
@@ -143,10 +456,174 @@ export default function AllClientsPage() {
         </div>
       )}
 
-      {filtered.length === 0 && !loading && (
-        <p className="mt-8 text-center text-gray-500">
-          No clients match “{query}”.
-        </p>
+      {processed.length === 0 && !loading && (
+        <p className="mt-8 text-center text-gray-500">No clients match your filters.</p>
+      )}
+
+      {/* Create modal */}
+      {openCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setOpenCreate(false)} />
+          <form
+            onSubmit={createClient}
+            className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4"
+          >
+            <h4 className="text-lg font-semibold text-brandLavender">New client</h4>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">First name *</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.firstName}
+                  onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Last name *</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.lastName}
+                  onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Date of birth *</label>
+                <input
+                  type="date"
+                  className="w-full border rounded p-2"
+                  value={form.dateOfBirth}
+                  onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input
+                  type="email"
+                  className="w-full border rounded p-2"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Address</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.address}
+                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">City</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.city}
+                  onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">State *</label>
+                  <select
+                    className="w-full border rounded p-2"
+                    value={form.state}
+                    onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
+                    required
+                  >
+                    <option value="">— Select —</option>
+                    {US_STATES.map((s) => (
+                      <option key={s.code} value={s.code}>{s.name} ({s.code})</option>
+                    ))}
+                  </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Zip code</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.zipCode}
+                  onChange={(e) => setForm((f) => ({ ...f, zipCode: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Home phone</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.homePhoneNumber}
+                  onChange={(e) => setForm((f) => ({ ...f, homePhoneNumber: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Cell phone</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.cellPhoneNumber}
+                  onChange={(e) => setForm((f) => ({ ...f, cellPhoneNumber: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Work phone</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.workPhoneNumber}
+                  onChange={(e) => setForm((f) => ({ ...f, workPhoneNumber: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Emergency contact name</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.emergencyContactName}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, emergencyContactName: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Emergency contact phone</label>
+                <input
+                  className="w-full border rounded p-2"
+                  value={form.emergencyContactPhone}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, emergencyContactPhone: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Referred by</label>
+              <input
+                className="w-full border rounded p-2"
+                value={form.referredBy}
+                onChange={(e) => setForm((f) => ({ ...f, referredBy: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setOpenCreate(false)}
+                className="px-4 py-2 rounded border"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="px-4 py-2 rounded bg-brandLavender text-white">
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
       )}
     </div>
   );

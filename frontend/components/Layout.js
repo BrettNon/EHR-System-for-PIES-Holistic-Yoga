@@ -3,11 +3,7 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import { Menu } from "@headlessui/react";
-import {
-  ChevronDownIcon,
-  HomeIcon,
-  LogOutIcon,
-} from "lucide-react";
+import { ChevronDownIcon, HomeIcon, LogOutIcon } from "lucide-react";
 
 /* ——— small helper to read username from JWT ——— */
 function getUsernameFromJwt(token) {
@@ -15,7 +11,7 @@ function getUsernameFromJwt(token) {
   try {
     const base64Url = token.split(".")[1];
     const json = atob(base64Url);
-    const { sub } = JSON.parse(json); // Spring JWT sets subject = username
+    const { sub } = JSON.parse(json);
     return sub || "";
   } catch {
     return "";
@@ -29,14 +25,12 @@ export default function Layout({ title, children }) {
   const [username, setUsername] = useState("");
   const [role, setRole] = useState("");
 
-  /* read token + role once on mount */
   useEffect(() => {
     const token = localStorage.getItem("pies-token");
     setUsername(getUsernameFromJwt(token));
     setRole(localStorage.getItem("pies-role") || "");
   }, [router.asPath]);
 
-  /* logout handler */
   const logout = () => {
     localStorage.removeItem("pies-token");
     localStorage.removeItem("pies-role");
@@ -47,17 +41,24 @@ export default function Layout({ title, children }) {
     <div className="min-h-screen flex flex-col bg-white text-gray-800">
       {/* ——— top bar ——— */}
       <header className="bg-brandLavender shadow-md h-16 flex items-center px-4 fixed inset-x-0 top-0 z-50">
-        {/* logo */}
-        <Link href="/dashboard" className="flex items-center space-x-2">
-          <Image src="/PIESlogo.jpeg" alt="PIES Logo" width={32} height={32} />
+        {/* logo (bigger) */}
+        <Link href="/dashboard" className="flex items-center" aria-label="Go to dashboard">
+          <Image
+            src="/new-logo1-png.webp"
+            alt="PIES Logo"
+            width={48}
+            height={48}
+            priority
+            className="object-contain"
+          />
         </Link>
 
-        {/* title */}
-        <h1 className="ml-3 text-white font-semibold">
-          PIES Fitness <span className="hidden sm:inline">| {title}</span>
+        {/* page title only */}
+        <h1 className="ml-4 text-white font-semibold">
+          {title}
         </h1>
 
-        {/* dev badge (only in non‑prod builds) */}
+        {/* dev badge (only in non-prod builds) */}
         {process.env.NODE_ENV !== "production" && (
           <span className="ml-4 px-2 py-0.5 rounded bg-yellow-300 text-xs font-semibold text-gray-900">
             DEV
@@ -89,9 +90,7 @@ export default function Layout({ title, children }) {
                   {({ active }) => (
                     <Link
                       href={href}
-                      className={`block px-4 py-2 text-sm ${
-                        active ? "bg-gray-100" : ""
-                      }`}
+                      className={`block px-4 py-2 text-sm ${active ? "bg-gray-100" : ""}`}
                     >
                       {label}
                     </Link>
@@ -111,20 +110,14 @@ export default function Layout({ title, children }) {
             <span className="truncate max-w-[10rem]">{username}</span>
             <span>|</span>
             <span className="truncate max-w-[10rem]">{role}</span>
-            <button
-              onClick={logout}
-              title="Logout"
-              className="hover:opacity-80 p-1"
-            >
+            <button onClick={logout} title="Logout" className="hover:opacity-80 p-1">
               <LogOutIcon size={18} />
             </button>
           </div>
         )}
-
-        
       </header>
 
-      {/* ——— gradient side‑bars + main ——— */}
+      {/* ——— gradient side-bars + main ——— */}
       <div className="flex pt-16 min-h-[calc(100vh-4rem)]">
         {showSidebars && (
           <>

@@ -1,22 +1,22 @@
 package com.pies.soap.service;
 
+import com.pies.audit.service.AuditLogService;
+import com.pies.soap.model.SoapNote;
+import com.pies.soap.repository.SoapNoteRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.pies.audit.service.AuditLogService;
-import com.pies.soap.model.SoapNote;
-import com.pies.soap.repository.SoapNoteRepository;
-
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-
 @Service
 @RequiredArgsConstructor
 public class SoapNoteService {
-
+    private static final Logger logger = LoggerFactory.getLogger(SoapNoteService.class);
     private final SoapNoteRepository repo;
     private final AuditLogService audit;
 
@@ -41,6 +41,7 @@ public class SoapNoteService {
         if (in.getPNotes() != null) n.setPNotes(in.getPNotes());
         if (in.getConditions() != null) n.setConditions(in.getConditions());
         if (in.getMedications() != null) n.setMedications(in.getMedications());
+        if (in.getMedicationNote() != null) n.setMedicationNote(in.getMedicationNote());
         if (in.getGoals() != null) n.setGoals(in.getGoals());
         if (in.getDiet() != null) n.setDiet(in.getDiet());
         if (in.getActivityLevel() != null) n.setActivityLevel(in.getActivityLevel());
@@ -82,8 +83,7 @@ public class SoapNoteService {
             audit.record("CREATE", "SoapNote", saved.getId());
             return saved;
         } catch (DataIntegrityViolationException ex) {
-            System.err.println("DataIntegrityViolationException: " + ex.getMessage());
-            ex.printStackTrace();  // Log full trace
+            logger.error("DataIntegrityViolationException: {}", ex.getMessage(), ex);
             throw ex;  // Let global handler respond
         }
     }

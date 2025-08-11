@@ -1,6 +1,7 @@
 // pages/dashboard.js
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   FileTextIcon,
   PenSquareIcon,
@@ -11,9 +12,9 @@ import {
   NotebookTextIcon,
 } from "lucide-react";
 
-/** Fetch first name using /auth/me (token already stored on login) */
 async function fetchProfile() {
-  const token = typeof window !== "undefined" ? localStorage.getItem("pies-token") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("pies-token") : null;
   if (!token) return null;
   const res = await fetch("http://localhost:8080/auth/me", {
     headers: { Authorization: `Bearer ${token}` },
@@ -32,7 +33,6 @@ export default function Dashboard() {
       const me = await fetchProfile();
       if (me?.firstName) setFirstName(me.firstName);
       else {
-        // fallback to username claim in JWT if first name missing
         try {
           const token = localStorage.getItem("pies-token");
           const sub = token ? JSON.parse(atob(token.split(".")[1]))?.sub : "";
@@ -44,14 +44,12 @@ export default function Dashboard() {
     })();
   }, []);
 
-  // Remove unwanted links and show Sr/Admin only items if role allows
   const ACTIONS = [
     { href: "/intake", label: "Intake Form", icon: FileTextIcon },
     { href: "/soap", label: "SOAP Note", icon: PenSquareIcon },
     { href: "/self-assessment", label: "Self Assessment", icon: ClipboardListIcon },
     { href: "/clients/assigned", label: "Assigned Clients", icon: UsersIcon },
     { href: "/clients/history", label: "Session History", icon: HistoryIcon },
-    // senior / admin only
     role === "Senior Therapist" || role === "Admin"
       ? { href: "/clients/all", label: "View All Clients", icon: UsersIcon }
       : null,
@@ -63,24 +61,70 @@ export default function Dashboard() {
       : null,
   ].filter(Boolean);
 
+  const bannerImages = [
+    { src: "/images/dashboard/pies1.jpg", alt: "Meditation outdoors" },
+    { src: "/images/dashboard/pies3.jpg", alt: "Tree pose with banner" },
+    { src: "/images/dashboard/pies4.jpg", alt: "Studio joy" },
+    { src: "/images/dashboard/pies5.jpg", alt: "Warrior pose in park" },
+    { src: "/images/dashboard/pies6.jpg", alt: "Restorative setup" },
+  ];
+
+  const EDGE = 22; // overlap + fade width
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10 space-y-10">
-      {/* Hero / Welcome banner */}
-      <section className="rounded-2xl shadow-xl overflow-hidden bg-gradient-to-br from-brandLavender via-purple-500 to-purple-300 text-white p-8 md:p-12 relative">
-        <div className="relative z-10">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+    <div className="max-w-7xl mx-auto px-4 py-10 space-y-12">
+      {/* Hero with multi-image background */}
+      <section className="relative rounded-2xl overflow-hidden shadow-xl h-56 md:h-72 lg:h-80">
+        {/* Image strip (under overlays) */}
+        <div className="absolute inset-0 flex z-10">
+          {bannerImages.map(({ src, alt }, i) => (
+            <div
+              key={src}
+              className="relative flex-1"
+              style={{
+                marginLeft: i === 0 ? 0 : `-${EDGE}px`,
+                zIndex: 10 + i,
+              }}
+            >
+              <Image
+                src={src}
+                alt={alt}
+                fill
+                priority={i === 0}
+                className="object-cover"
+                sizes="(max-width: 1024px) 20vw, 20vw"
+                style={{
+                  WebkitMaskImage:
+                    i === 0
+                      ? "none"
+                      : `linear-gradient(to right, rgba(0,0,0,0) 0, rgba(0,0,0,1) ${EDGE}px, rgba(0,0,0,1) 100%)`,
+                  maskImage:
+                    i === 0
+                      ? "none"
+                      : `linear-gradient(to right, rgba(0,0,0,0) 0, rgba(0,0,0,1) ${EDGE}px, rgba(0,0,0,1) 100%)`,
+                  transform: "translateZ(0)",
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Overlays (above images, below text) */}
+        <div className="pointer-events-none absolute inset-0 bg-black/25 z-40" />
+        <div className="pointer-events-none absolute inset-0 z-40 bg-gradient-to-r from-brandLavender/95 via-brandLavender/80 to-brandLavender/50" />
+
+        {/* Text (topmost) */}
+        <div className="relative z-50 h-full flex flex-col justify-center p-8 md:p-12 text-white">
+          <h1 className="text-3xl md:text-4xl font-bold drop-shadow-sm">
             Welcome{firstName ? `, ${firstName}!` : "!"}
           </h1>
-          <p className="text-lg opacity-90">
-            Here’s what you can do today. Choose an action to get started.
+          <p className="mt-2 text-base md:text-lg opacity-95">
+            Breathe in. Grow. Support your clients—start by choosing an action below.
           </p>
         </div>
-        {/* Decorative circles */}
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-        <div className="absolute bottom-0 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl" />
       </section>
 
-      {/* Quick actions grid */}
+      {/* Quick actions */}
       <section>
         <h2 className="sr-only">Quick Actions</h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -98,29 +142,11 @@ export default function Dashboard() {
                   {label}
                 </span>
               </div>
-              {/* subtle gradient corner highlight */}
               <span className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-brandLavender/0 via-brandLavender/0 to-brandLavender/10 opacity-0 group-hover:opacity-100 transition" />
             </Link>
           ))}
         </div>
       </section>
-
-      {/* (Optional) future: stats / recent activity blocks */}
-      {/* <section className="grid gap-6 md:grid-cols-2">
-        <StatsCard title="Active Clients" value="23" />
-        <StatsCard title="Sessions This Week" value="14" />
-      </section> */}
     </div>
   );
 }
-
-/* Example stat card component if you add metrics later
-function StatsCard({ title, value }) {
-  return (
-    <div className="bg-white rounded-xl p-6 shadow-md">
-      <p className="text-sm text-gray-500">{title}</p>
-      <p className="text-3xl font-bold text-gray-800 mt-1">{value}</p>
-    </div>
-  );
-}
-*/

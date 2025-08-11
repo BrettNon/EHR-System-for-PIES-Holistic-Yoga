@@ -30,6 +30,7 @@ public class SelfAssessmentService {
         if (in.getDateOfSession() != null) a.setDateOfSession(in.getDateOfSession());
         if (in.getGoalOfSession() != null) a.setGoalOfSession(in.getGoalOfSession());
         if (in.getAssessment() != null) a.setAssessment(in.getAssessment());
+        if (in.getNotes() != null) a.setNotes(in.getNotes());
         var saved = repo.save(a);
         audit.record("UPDATE", "SelfAssessment", saved.getId());
         return saved;
