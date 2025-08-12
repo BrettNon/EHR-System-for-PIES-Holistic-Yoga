@@ -49,6 +49,9 @@ export default function AllClientsPage() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // therapists for assignment (NEW)
+  const [therapists, setTherapists] = useState([]);
+
   // search + filters
   const [query, setQuery] = useState("");
 
@@ -86,14 +89,15 @@ export default function AllClientsPage() {
     emergencyContactName: "",
     emergencyContactPhone: "",
     referredBy: "",
+    therapistId: "", // NEW: required
   });
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("pies-token") : null;
-  const therapistId =
+  const myTherapistId =
     typeof window !== "undefined"
-      ? Number(localStorage.getItem("therapistId") || "1")
-      : 1;
+      ? Number(localStorage.getItem("therapistId") || "0")
+      : 0;
 
   // ---------- helpers ----------
   function parseYmd(ymd) {
@@ -169,8 +173,28 @@ export default function AllClientsPage() {
     }
   };
 
+  // ---------- fetch active therapists (NEW) ----------
+  const loadTherapists = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("http://localhost:8080/therapists/active", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to load therapists");
+      const data = await res.json();
+      setTherapists(Array.isArray(data) ? data : []);
+      // preselect current therapist if available
+      const mine = (Array.isArray(data) ? data : []).find((t) => Number(t.id) === Number(myTherapistId));
+      setForm((f) => ({ ...f, therapistId: mine ? String(mine.id) : "" }));
+    } catch (e) {
+      console.error(e);
+      // don't block page; leave list empty
+    }
+  };
+
   useEffect(() => {
     loadClients();
+    loadTherapists();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -205,6 +229,10 @@ export default function AllClientsPage() {
       alert("First name, last name, and date of birth are required.");
       return;
     }
+    if (!form.therapistId) {
+      alert("Please select a therapist to assign this client to.");
+      return;
+    }
     try {
       const res = await fetch("http://localhost:8080/patients", {
         method: "POST",
@@ -215,7 +243,7 @@ export default function AllClientsPage() {
         body: JSON.stringify({
           ...form,
           state: normalizeState(form.state),
-          therapistId, // associate to current therapist
+          therapistId: Number(form.therapistId), // assign from selection (REQUIRED)
         }),
       });
       if (!res.ok) {
@@ -238,6 +266,7 @@ export default function AllClientsPage() {
         emergencyContactName: "",
         emergencyContactPhone: "",
         referredBy: "",
+        therapistId: myTherapistId ? String(myTherapistId) : "",
       });
       await loadClients();
     } catch (err) {
@@ -339,7 +368,8 @@ export default function AllClientsPage() {
           />
           <SearchIcon
             size={18}
-            className="absolute left-3 top-[2.35rem] -translate-y-1/2 text-gray-400 pointer-events-none"
+            className="absolute left-3 top=[2.35rem] -translate-y-1/2 text-gray-400 pointer-events-none"
+            style={{ top: "2.35rem" }}
           />
         </div>
 
@@ -547,6 +577,27 @@ export default function AllClientsPage() {
             className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4"
           >
             <h4 className="text-lg font-semibold text-brandLavender">New client</h4>
+
+            {/* Therapist assignment (REQUIRED) */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Assign Therapist *</label>
+              <select
+                className="w-full border rounded p-2"
+                value={form.therapistId}
+                onChange={(e) => setForm((f) => ({ ...f, therapistId: e.target.value }))}
+                required
+              >
+                <option value="">— Select therapist —</option>
+                {therapists.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+              {therapists.length === 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  No active therapists found. Please add therapists first.
+                </p>
+              )}
+            </div>
 
             <div className="grid sm:grid-cols-2 gap-3">
               <div>

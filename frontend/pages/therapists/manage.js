@@ -128,12 +128,6 @@ export default function ManageTherapistsPage() {
               {/* footer actions */}
               <div className="flex border-t border-gray-200 text-sm">
                 {/* Example: detail/edit page if/when you add it */}
-                <Link
-                  href={`/therapists/edit?id=${th.id}`}
-                  className="flex-1 px-4 py-2 text-brandLavender hover:bg-gray-50 text-center"
-                >
-                  Edit
-                </Link>
                 <button
                   onClick={() => deleteTherapist(th.id)}
                   title="Delete therapist"
