@@ -5,6 +5,7 @@ import { CheckBoxGroup } from "../components/CheckBoxGroup";
 import { SignaturePadField } from "../components/SignaturePadField";
 import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../utils/api";
+import { API_BASE_URL } from "../utils/config";
 
 /** 50 U.S. states (two-letter codes) */
 const US_STATES = [
@@ -129,7 +130,7 @@ export default function IntakeFormPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiFetch("http://localhost:8080/therapists/active");
+        const res = await apiFetch(`${API_BASE_URL}/therapists/active`);
         if (!res.ok) throw new Error("Failed to load therapists");
         const data = await res.json();
         setTherapists(data || []);
@@ -157,7 +158,7 @@ export default function IntakeFormPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiFetch("http://localhost:8080/patients?page=0&size=500");
+        const res = await apiFetch(`${API_BASE_URL}/patients?page=0&size=500`);
         if (!res.ok) throw new Error("Failed to load patients");
         const page = await res.json();
         setPatients(page.content || []);
@@ -263,41 +264,41 @@ export default function IntakeFormPage() {
     // If user selected an existing client → send patientId, otherwise send patient object with therapist assignment
     payload.patient = selectedPatient?.id
       ? {
-          id: selectedPatient.id,
-          firstName: selectedPatient.firstName || watch("firstName") || "",
-          lastName: selectedPatient.lastName || watch("lastName") || "",
-          dateOfBirth: selectedPatient.dateOfBirth || watch("dob") || null,
-          address: selectedPatient.address || "",
-          city: selectedPatient.city || "",
-          state: selectedPatient.state || "", // 2-letter
-          zipCode: (selectedPatient.zipCode || "").replace(/\D/g, "").slice(0, 5),
-          email: selectedPatient.email || "",
-          homePhoneNumber: (selectedPatient.homePhoneNumber || "").replace(/\D/g, "").slice(0, 10),
-          cellPhoneNumber: (selectedPatient.cellPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
-          workPhoneNumber: (selectedPatient.workPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
-          emergencyContactName: selectedPatient.emergencyContactName || "",
-          emergencyContactPhone: (selectedPatient.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
-          referredBy: selectedPatient.referredBy || "",
-          dateCreated: selectedPatient.dateCreated || selectedPatient.createdAt || undefined,
-        }
+        id: selectedPatient.id,
+        firstName: selectedPatient.firstName || watch("firstName") || "",
+        lastName: selectedPatient.lastName || watch("lastName") || "",
+        dateOfBirth: selectedPatient.dateOfBirth || watch("dob") || null,
+        address: selectedPatient.address || "",
+        city: selectedPatient.city || "",
+        state: selectedPatient.state || "", // 2-letter
+        zipCode: (selectedPatient.zipCode || "").replace(/\D/g, "").slice(0, 5),
+        email: selectedPatient.email || "",
+        homePhoneNumber: (selectedPatient.homePhoneNumber || "").replace(/\D/g, "").slice(0, 10),
+        cellPhoneNumber: (selectedPatient.cellPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
+        workPhoneNumber: (selectedPatient.workPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
+        emergencyContactName: selectedPatient.emergencyContactName || "",
+        emergencyContactPhone: (selectedPatient.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
+        referredBy: selectedPatient.referredBy || "",
+        dateCreated: selectedPatient.dateCreated || selectedPatient.createdAt || undefined,
+      }
       : {
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          dateOfBirth: data.dob,
-          address: data.address,
-          city: data.city,
-          state: data.state, // two-letter code
-          zipCode: (data.zipCode || "").replace(/\D/g, "").slice(0, 5),
-          email: data.email,
-          homePhoneNumber: (data.homePhone || "").replace(/\D/g, "").slice(0, 10),
-          cellPhoneNumber: (data.cellPhone || "").replace(/\D/g, "").slice(0, 10),
-          workPhoneNumber: (data.workPhone || "").replace(/\D/g, "").slice(0, 10),
-          emergencyContactName: data.emergencyContactName,
-          emergencyContactPhone: (data.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
-          referredBy: data.referredBy,
-          dateCreated: today,
-          therapistId: data.newClientTherapistId ? Number(data.newClientTherapistId) : null, // NEW: assign therapist to the new client
-        };
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        dateOfBirth: data.dob,
+        address: data.address,
+        city: data.city,
+        state: data.state, // two-letter code
+        zipCode: (data.zipCode || "").replace(/\D/g, "").slice(0, 5),
+        email: data.email,
+        homePhoneNumber: (data.homePhone || "").replace(/\D/g, "").slice(0, 10),
+        cellPhoneNumber: (data.cellPhone || "").replace(/\D/g, "").slice(0, 10),
+        workPhoneNumber: (data.workPhone || "").replace(/\D/g, "").slice(0, 10),
+        emergencyContactName: data.emergencyContactName,
+        emergencyContactPhone: (data.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
+        referredBy: data.referredBy,
+        dateCreated: today,
+        therapistId: data.newClientTherapistId ? Number(data.newClientTherapistId) : null, // NEW: assign therapist to the new client
+      };
 
     // guard: when creating a new client, therapist selection is required
     if (!isExisting && !payload.patient.therapistId) {
@@ -306,7 +307,7 @@ export default function IntakeFormPage() {
     }
 
     try {
-      const res = await apiFetch("http://localhost:8080/intakes", {
+      const res = await apiFetch(`${API_BASE_URL}/intakes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -723,7 +724,7 @@ export default function IntakeFormPage() {
       </div>
 
       <CheckBoxGroup title="Physical History" namePrefix="physicalHistory" options={physicalHistoryOptions}
-                     register={register} />
+        register={register} />
       {/* Other / Explain */}
       <div>
         <label className="block font-medium mb-1">Other / Explain</label>
