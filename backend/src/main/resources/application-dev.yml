@@ -13,5 +13,5 @@ springdoc:
 cors:
   allowed-origins:
     - http://localhost:3000
-    #- https://piesyoga.us.kg
-    #- https://api.piesyoga.us.kg
+    - https://piesyoga.us.kg
+    - https://api.piesyoga.us.kg
