@@ -763,45 +763,6 @@ export default function IntakeFormPage() {
         )}
       </div>
 
-      {/* (Note: duplicated blocks from original retained) */}
-      <CheckBoxGroup title="Physical History" namePrefix="physicalHistory" options={physicalHistoryOptions} register={register} />
-      <div>
-        <label className="block font-medium mb-1">Other / Explain</label>
-        <textarea
-          className="w-full border rounded p-2 mb-1"
-          rows={4}
-          maxLength={MAX_NOTE}
-          {...register("otherConditionsExplanation", {
-            maxLength: { value: MAX_NOTE, message: `Max ${MAX_NOTE} characters` },
-          })}
-        />
-        <FieldCount value={watch("otherConditionsExplanation")} max={MAX_NOTE} />
-        {errors.otherConditionsExplanation && (
-          <p className="text-red-600 text-xs mt-1">
-            {errors.otherConditionsExplanation.message}
-          </p>
-        )}
-      </div>
-
-      {/* Medications */}
-      <div>
-        <label className="block font-medium mb-1">
-          Are you currently taking any medications?
-        </label>
-        <textarea
-          className="w-full border rounded p-2 mb-1"
-          rows={3}
-          maxLength={MAX_NOTE}
-          {...register("medications", {
-            maxLength: { value: MAX_NOTE, message: `Max ${MAX_NOTE} characters` },
-          })}
-        />
-        <FieldCount value={watch("medications")} max={MAX_NOTE} />
-        {errors.medications && (
-          <p className="text-red-600 text-xs mt-1">{errors.medications.message}</p>
-        )}
-      </div>
-
       {/* Additional details */}
       <div>
         <label className="block font-medium mb-1">
