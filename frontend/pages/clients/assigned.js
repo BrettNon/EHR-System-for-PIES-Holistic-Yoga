@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { SearchIcon, Trash2Icon, SlidersHorizontal } from "lucide-react";
+import { API_BASE_URL } from "../../utils/config";
 
 export default function AssignedClientsPage() {
   const [clients, setClients] = useState([]);
@@ -59,7 +60,7 @@ export default function AssignedClientsPage() {
     if (!token) return;
     (async () => {
       try {
-        const res = await fetch("http://localhost:8080/patients?page=0&size=100", {
+        const res = await fetch(`${API_BASE_URL}/patients?page=0&size=100`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Failed to load patients");
@@ -102,7 +103,7 @@ export default function AssignedClientsPage() {
   const deleteClient = async (id) => {
     if (!confirm("Delete this client?")) return;
     try {
-      const res = await fetch(`http://localhost:8080/patients/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/patients/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -111,7 +112,7 @@ export default function AssignedClientsPage() {
         let message = "Delete failed";
         try {
           message = JSON.parse(text).message || message;
-        } catch {}
+        } catch { }
         throw new Error(message);
       }
       setClients((prev) => prev.filter((c) => c.id !== id));

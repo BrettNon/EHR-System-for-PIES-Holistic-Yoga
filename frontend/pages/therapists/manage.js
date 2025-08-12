@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SearchIcon, Trash2Icon } from "lucide-react";
+import { API_BASE_URL } from "../../utils/config";
 
 const ROLE_LABELS = {
   ADMIN: "Admin",
@@ -23,7 +24,7 @@ export default function ManageTherapistsPage() {
     (async () => {
       try {
         // This endpoint requires ADMIN or SENIOR (per your controller)
-        const res = await fetch("http://localhost:8080/therapists?page=0&size=100", {
+        const res = await fetch(`${API_BASE_URL}/therapists?page=0&size=100`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Failed to load therapists");
@@ -50,7 +51,7 @@ export default function ManageTherapistsPage() {
   const deleteTherapist = async (id) => {
     if (!confirm("Delete / deactivate this therapist?")) return;
     try {
-      const res = await fetch(`http://localhost:8080/therapists/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/therapists/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -61,7 +62,7 @@ export default function ManageTherapistsPage() {
         let message = "Delete failed";
         try {
           message = JSON.parse(text).message || message;
-        } catch (_) {}
+        } catch (_) { }
         throw new Error(message);
       }
 

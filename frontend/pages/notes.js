@@ -1,7 +1,8 @@
 // pages/notes.js  (or wherever this lives)
-import {useEffect, useMemo, useState} from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {SearchIcon} from "lucide-react";
+import { SearchIcon } from "lucide-react";
+import { API_BASE_URL } from "../utils/config";
 
 /** helper: parse YYYY-MM-DD or ISO to safe Date (UTC to avoid off-by-one) */
 function parseYmd(ymd) {
@@ -42,12 +43,12 @@ export default function TherapistNotesPage() {
         if (!token) return;
         (async () => {
             try {
-                const headers = {Authorization: `Bearer ${token}`};
+                const headers = { Authorization: `Bearer ${token}` };
 
                 const [soapRes, selfRes, intakeRes] = await Promise.all([
-                    fetch(`http://localhost:8080/${TYPE_META.SOAP.endpoint}?page=0&size=100`, {headers}),
-                    fetch(`http://localhost:8080/${TYPE_META.SELF.endpoint}?page=0&size=100`, {headers}),
-                    fetch(`http://localhost:8080/${TYPE_META.INTAKE.endpoint}?page=0&size=100`, {headers}),
+                    fetch(`${API_BASE_URL}/${TYPE_META.SOAP.endpoint}?page=0&size=100`, { headers }),
+                    fetch(`${API_BASE_URL}/${TYPE_META.SELF.endpoint}?page=0&size=100`, { headers }),
+                    fetch(`${API_BASE_URL}/${TYPE_META.INTAKE.endpoint}?page=0&size=100`, { headers }),
                 ]);
 
                 if (!soapRes.ok || !selfRes.ok || !intakeRes.ok) {
@@ -145,11 +146,10 @@ export default function TherapistNotesPage() {
                             <button
                                 key={key}
                                 onClick={() => toggleType(key)}
-                                className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-                                    active
-                                        ? "bg-purple-600 text-white shadow"
-                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                }`}
+                                className={`px-3 py-1 rounded-full text-sm font-medium transition ${active
+                                    ? "bg-purple-600 text-white shadow"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    }`}
                             >
                                 {meta.label}
                             </button>
@@ -177,14 +177,14 @@ export default function TherapistNotesPage() {
                         >
                             {/* subtle gradient bar on the left */}
                             <span
-                                className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-purple-400 to-purple-600"/>
+                                className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-purple-400 to-purple-600" />
                             <div className="p-5 pl-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
                                 {/* badge */}
                                 <span
                                     className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${meta.color}`}
                                 >
-                  {meta.label}
-                </span>
+                                    {meta.label}
+                                </span>
 
                                 <div className="flex-1">
                                     <p className="font-semibold text-lg text-gray-800">{item.patientName}</p>
@@ -206,7 +206,7 @@ export default function TherapistNotesPage() {
 
                             {/* hover overlay effect */}
                             <div
-                                className="absolute inset-0 opacity-0 group-hover:opacity-5 bg-gradient-to-r from-purple-600 to-purple-300 transition pointer-events-none"/>
+                                className="absolute inset-0 opacity-0 group-hover:opacity-5 bg-gradient-to-r from-purple-600 to-purple-300 transition pointer-events-none" />
                         </li>
                     );
                 })}

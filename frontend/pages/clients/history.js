@@ -1,11 +1,12 @@
 // pages/clients/history.js
 import { useEffect, useMemo, useState } from "react";
+import { API_BASE_URL } from "../../utils/config";
 
 /* Small helpers */
 const toLocalNoZ = (d) => {
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-         `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 };
 const iso = (d) => new Date(d).toISOString();
 const today = new Date();
@@ -57,7 +58,7 @@ export default function ClientHistoryPage() {
     (async () => {
       try {
         const res = await fetch(
-          "http://localhost:8080/patients?page=0&size=500",
+          `${API_BASE_URL}/patients?page=0&size=500`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!res.ok) return;
@@ -80,14 +81,14 @@ export default function ClientHistoryPage() {
     setLoading(true);
     try {
       const fromDt = new Date(`${fromDate}T00:00:00`);
-      const toDt   = new Date(`${toDate}T23:59:59`);
+      const toDt = new Date(`${toDate}T23:59:59`);
 
       const q = `from=${encodeURIComponent(toLocalNoZ(fromDt))}` +
-                `&to=${encodeURIComponent(toLocalNoZ(toDt))}`;
+        `&to=${encodeURIComponent(toLocalNoZ(toDt))}`;
 
       const url = selectedPatientId
-        ? `http://localhost:8080/appointments/patient/${Number(selectedPatientId)}?${q}`
-        : `http://localhost:8080/appointments/therapist/${Number(therapistId)}?${q}`;
+        ? `${API_BASE_URL}/appointments/patient/${Number(selectedPatientId)}?${q}`
+        : `${API_BASE_URL}/appointments/therapist/${Number(therapistId)}?${q}`;
 
       console.log("GET", url); // helpful while testing
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -138,7 +139,7 @@ export default function ClientHistoryPage() {
     if (!form.patientId) return alert("Please choose a patient.");
     const appointmentTime = `${form.date}T${form.time}:00`; // local, no Z
     try {
-      const res = await fetch("http://localhost:8080/appointments", {
+      const res = await fetch(`${API_BASE_URL}/appointments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -147,7 +148,7 @@ export default function ClientHistoryPage() {
         body: JSON.stringify({
           therapistId: Number(therapistId),
           patientId: Number(form.patientId),
-          appointmentTime, 
+          appointmentTime,
           durationMinutes: Number(form.durationMinutes),
           notes: form.notes || "",
         }),
@@ -165,7 +166,7 @@ export default function ClientHistoryPage() {
   const cancelAppointment = async (id) => {
     if (!confirm("Cancel this appointment?")) return;
     try {
-      const res = await fetch(`http://localhost:8080/appointments/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/appointments/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

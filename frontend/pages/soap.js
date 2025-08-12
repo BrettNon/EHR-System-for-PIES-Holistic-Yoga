@@ -1,12 +1,13 @@
 // pages/soap.js
-import {useEffect, useRef, useState} from "react";
-import {useForm} from "react-hook-form";
-import {TextInput} from "../components/TextInput";
-import {SignaturePadField} from "../components/SignaturePadField";
-import {SearchIcon, XIcon} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { TextInput } from "../components/TextInput";
+import { SignaturePadField } from "../components/SignaturePadField";
+import { SearchIcon, XIcon } from "lucide-react";
+import { API_BASE_URL } from "../utils/config";
 
 /** Helper: live character counter */
-function FieldCount({value, max}) {
+function FieldCount({ value, max }) {
     const count = value?.length ?? 0;
     const over = max != null && count > max;
     return (
@@ -30,8 +31,8 @@ export default function SOAPFormPage() {
         reset,
         setValue,
         watch,
-        formState: {errors, isValid},
-    } = useForm({mode: "onChange"});
+        formState: { errors, isValid },
+    } = useForm({ mode: "onChange" });
 
     const [loading, setLoading] = useState(false);
 
@@ -55,8 +56,8 @@ export default function SOAPFormPage() {
         if (!token) return;
         (async () => {
             try {
-                const res = await fetch("http://localhost:8080/patients?page=0&size=500", {
-                    headers: {Authorization: `Bearer ${token}`},
+                const res = await fetch(`${API_BASE_URL}/patients?page=0&size=500`, {
+                    headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!res.ok) throw new Error("Failed to load patients");
                 const page = await res.json();
@@ -80,14 +81,14 @@ export default function SOAPFormPage() {
     );
 
     const choosePatient = (p) => {
-        setValue("patientId", p.id, {shouldValidate: true});
+        setValue("patientId", p.id, { shouldValidate: true });
         setQuery(p.name);
         setSelectedPatientId(p.id);
         setOpenDropdown(false);
     };
 
     const clearPatient = () => {
-        setValue("patientId", "", {shouldValidate: true});
+        setValue("patientId", "", { shouldValidate: true });
         setQuery("");
         setOpenDropdown(false);
         inputRef.current?.focus();
@@ -132,8 +133,8 @@ export default function SOAPFormPage() {
 
         (async () => {
             try {
-                const res = await fetch(`http://localhost:8080/intakes/patient/${selectedPatientId}`, {
-                    headers: {Authorization: `Bearer ${token}`},
+                const res = await fetch(`${API_BASE_URL}/intakes/patient/${selectedPatientId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
                 });
 
                 if (!res.ok) throw new Error("Failed to load intake data");
@@ -238,7 +239,7 @@ export default function SOAPFormPage() {
                 signature: data.signature,
             };
 
-            const res = await fetch("http://localhost:8080/soap-notes", {
+            const res = await fetch(`${API_BASE_URL}/soap-notes`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -263,7 +264,7 @@ export default function SOAPFormPage() {
             <h2 className="text-2xl font-semibold text-brandLavender">SOAP Note</h2>
 
             {/* hidden patientId field that backend will need */}
-            <input type="hidden" {...register("patientId", {required: true})} />
+            <input type="hidden" {...register("patientId", { required: true })} />
             <input type="hidden" {...register("signature")} />
 
             {/* Patient search/autocomplete */}
@@ -274,27 +275,26 @@ export default function SOAPFormPage() {
                         ref={inputRef}
                         type="text"
                         placeholder="Search patient…"
-                        className={`w-full border rounded pl-8 pr-9 py-2 focus:outline-none focus:ring-2 focus:ring-brandLavender ${
-                            errors.patientId ? "border-red-500" : ""
-                        }`}
+                        className={`w-full border rounded pl-8 pr-9 py-2 focus:outline-none focus:ring-2 focus:ring-brandLavender ${errors.patientId ? "border-red-500" : ""
+                            }`}
                         value={query}
                         onChange={(e) => {
                             setQuery(e.target.value);
                             setOpenDropdown(true);
                             setHighlightIdx(0);
-                            setValue("patientId", "", {shouldValidate: true});
+                            setValue("patientId", "", { shouldValidate: true });
                         }}
                         onFocus={() => setOpenDropdown(true)}
                         onKeyDown={onPatientKeyDown}
                     />
-                    <SearchIcon size={18} className="absolute left-2 top-2.5 text-gray-400 pointer-events-none"/>
+                    <SearchIcon size={18} className="absolute left-2 top-2.5 text-gray-400 pointer-events-none" />
                     {query && (
                         <button
                             type="button"
                             className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600"
                             onClick={clearPatient}
                         >
-                            <XIcon size={16}/>
+                            <XIcon size={16} />
                         </button>
                     )}
                 </div>
@@ -304,9 +304,8 @@ export default function SOAPFormPage() {
                         {filteredPatients.map((p, idx) => (
                             <li
                                 key={p.id}
-                                className={`px-3 py-2 cursor-pointer text-sm ${
-                                    idx === highlightIdx ? "bg-brandLavender/10 text-brandLavender" : "hover:bg-gray-100"
-                                }`}
+                                className={`px-3 py-2 cursor-pointer text-sm ${idx === highlightIdx ? "bg-brandLavender/10 text-brandLavender" : "hover:bg-gray-100"
+                                    }`}
                                 onMouseDown={(e) => {
                                     e.preventDefault();
                                     choosePatient(p);
@@ -332,7 +331,7 @@ export default function SOAPFormPage() {
                     type="date"
                     register={register}
                     required
-                    {...register("dateOfSession", {required: "Date is required"})}
+                    {...register("dateOfSession", { required: "Date is required" })}
                 />
 
                 <TextInput
@@ -341,7 +340,7 @@ export default function SOAPFormPage() {
                     type="time"
                     register={register}
                     required
-                    {...register("timeOfSession", {required: "Time is required"})}
+                    {...register("timeOfSession", { required: "Time is required" })}
                 />
 
                 {/* session_length is VARCHAR(255) */}
@@ -352,21 +351,21 @@ export default function SOAPFormPage() {
                         placeholder="e.g. 60 min"
                         maxLength={MAX255}
                         {...register("sessionLength", {
-                            maxLength: {value: MAX255, message: `Max ${MAX255} characters`},
+                            maxLength: { value: MAX255, message: `Max ${MAX255} characters` },
                         })}
                     />
-                    <FieldCount value={watch("sessionLength")} max={MAX255}/>
+                    <FieldCount value={watch("sessionLength")} max={MAX255} />
                     {errors.sessionLength && (
                         <p className="text-red-600 text-xs mt-1">{errors.sessionLength.message}</p>
                     )}
                 </div>
 
                 <TextInput label="Age" name="age" type="number" register={register} min={0}
-                           {...register("age", {
-                               min: {value: 0, message: "Age cannot be negative"},
-                               max: {value: 120, message: "Please enter a realistic age"},
-                               valueAsNumber: true,
-                           })}
+                    {...register("age", {
+                        min: { value: 0, message: "Age cannot be negative" },
+                        max: { value: 120, message: "Please enter a realistic age" },
+                        valueAsNumber: true,
+                    })}
                 />
 
                 {/* Activity Level (VARCHAR(255)) */}
@@ -375,7 +374,7 @@ export default function SOAPFormPage() {
                     <select
                         className="w-full border rounded p-2"
                         {...register("activityLevel", {
-                            maxLength: {value: MAX255, message: `Max ${MAX255} characters`},
+                            maxLength: { value: MAX255, message: `Max ${MAX255} characters` },
                         })}
                     >
                         <option value="">— Select —</option>
@@ -397,10 +396,10 @@ export default function SOAPFormPage() {
                     placeholder="Describe current conditions, complaints, etc."
                     maxLength={MAX255}
                     {...register("conditions", {
-                        maxLength: {value: MAX255, message: `Max ${MAX255} characters`},
+                        maxLength: { value: MAX255, message: `Max ${MAX255} characters` },
                     })}
                 />
-                <FieldCount value={watch("conditions")} max={MAX255}/>
+                <FieldCount value={watch("conditions")} max={MAX255} />
                 {errors.conditions && <p className="text-red-600 text-xs mt-1">{errors.conditions.message}</p>}
             </div>
 
@@ -412,10 +411,10 @@ export default function SOAPFormPage() {
                     placeholder="Past injuries, surgeries, relevant medical history…"
                     maxLength={MAX255}
                     {...register("historyOfConditions", {
-                        maxLength: {value: MAX255, message: `Max ${MAX255} characters`},
+                        maxLength: { value: MAX255, message: `Max ${MAX255} characters` },
                     })}
                 />
-                <FieldCount value={watch("historyOfConditions")} max={MAX255}/>
+                <FieldCount value={watch("historyOfConditions")} max={MAX255} />
                 {errors.historyOfConditions && (
                     <p className="text-red-600 text-xs mt-1">{errors.historyOfConditions.message}</p>
                 )}
@@ -429,10 +428,10 @@ export default function SOAPFormPage() {
                     placeholder="List medications (one per line or separated by commas)"
                     maxLength={MAX255}
                     {...register("medications", {
-                        maxLength: {value: MAX255, message: `Max ${MAX255} characters`},
+                        maxLength: { value: MAX255, message: `Max ${MAX255} characters` },
                     })}
                 />
-                <FieldCount value={watch("medications")} max={MAX255}/>
+                <FieldCount value={watch("medications")} max={MAX255} />
                 {errors.medications && <p className="text-red-600 text-xs mt-1">{errors.medications.message}</p>}
             </div>
 
@@ -444,10 +443,10 @@ export default function SOAPFormPage() {
                     placeholder="Short and long term goals..."
                     maxLength={MAX255}
                     {...register("goals", {
-                        maxLength: {value: MAX255, message: `Max ${MAX255} characters`},
+                        maxLength: { value: MAX255, message: `Max ${MAX255} characters` },
                     })}
                 />
-                <FieldCount value={watch("goals")} max={MAX255}/>
+                <FieldCount value={watch("goals")} max={MAX255} />
                 {errors.goals && <p className="text-red-600 text-xs mt-1">{errors.goals.message}</p>}
             </div>
 
@@ -459,19 +458,19 @@ export default function SOAPFormPage() {
                     placeholder="Dietary considerations, restrictions, preferences..."
                     maxLength={MAX255}
                     {...register("diet", {
-                        maxLength: {value: MAX255, message: `Max ${MAX255} characters`},
+                        maxLength: { value: MAX255, message: `Max ${MAX255} characters` },
                     })}
                 />
-                <FieldCount value={watch("diet")} max={MAX255}/>
+                <FieldCount value={watch("diet")} max={MAX255} />
                 {errors.diet && <p className="text-red-600 text-xs mt-1">{errors.diet.message}</p>}
             </div>
 
             {/* SOAP sections (all VARCHAR(255)) */}
             {[
-                {label: "Subjective (S)", name: "subjective"},
-                {label: "Objective (O)", name: "objective"},
-                {label: "Assessment (A)", name: "assessment"},
-                {label: "Plan (P)", name: "plan"},
+                { label: "Subjective (S)", name: "subjective" },
+                { label: "Objective (O)", name: "objective" },
+                { label: "Assessment (A)", name: "assessment" },
+                { label: "Plan (P)", name: "plan" },
             ].map((sec) => (
                 <div key={sec.name}>
                     <label className="block font-medium mb-1">{sec.label}</label>
@@ -480,10 +479,10 @@ export default function SOAPFormPage() {
                         className="w-full border rounded p-3"
                         maxLength={MAX255}
                         {...register(sec.name, {
-                            maxLength: {value: MAX255, message: `Max ${MAX255} characters`},
+                            maxLength: { value: MAX255, message: `Max ${MAX255} characters` },
                         })}
                     />
-                    <FieldCount value={watch(sec.name)} max={MAX255}/>
+                    <FieldCount value={watch(sec.name)} max={MAX255} />
                     {errors[sec.name] && <p className="text-red-600 text-xs mt-1">{errors[sec.name].message}</p>}
                 </div>
             ))}
@@ -497,14 +496,14 @@ export default function SOAPFormPage() {
                     placeholder="Any brief notes, comments, reminders..."
                     {...register("quickNotes")}
                 />
-                <FieldCount value={watch("quickNotes")}/>
+                <FieldCount value={watch("quickNotes")} />
             </div>
 
             {/* Signature block (DB column is VARCHAR(100); current pad is visual-only) */}
             <div>
                 <SignaturePadField
                     label="Therapist Signature"
-                    onEnd={(sig) => setValue("signature", sig, {shouldValidate: true})}
+                    onEnd={(sig) => setValue("signature", sig, { shouldValidate: true })}
                 />
                 {/* If you switch to storing a typed signature, cap it at MAX100 and send to backend. */}
             </div>

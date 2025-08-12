@@ -11,12 +11,13 @@ import {
   UserCogIcon,
   NotebookTextIcon,
 } from "lucide-react";
+import { API_BASE_URL } from "../utils/config";
 
 async function fetchProfile() {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("pies-token") : null;
   if (!token) return null;
-  const res = await fetch("http://localhost:8080/auth/me", {
+  const res = await fetch(`${API_BASE_URL}/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return null;

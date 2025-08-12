@@ -2,6 +2,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { API_BASE_URL } from "../../utils/config";
 
 /* ---------- helpers ---------- */
 function parseYmd(ymd) {
@@ -87,9 +88,8 @@ function CheckboxGrid({ title, items }) {
         {items.map(({ label, checked }, i) => (
           <label
             key={`${label}-${i}`}
-            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-              checked ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
-            }`}
+            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${checked ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
+              }`}
           >
             <input type="checkbox" checked={!!checked} readOnly className="accent-brandLavender" />
             <span>{label}</span>
@@ -137,9 +137,9 @@ const SA_PROMPTS = [
 ];
 
 const TYPE_META = {
-  soap:   { label: "SOAP Note",        endpoint: "soap-notes" },
-  self:   { label: "Self Assessment",  endpoint: "self-assessments" },
-  intake: { label: "Intake Form",      endpoint: "intakes" },
+  soap: { label: "SOAP Note", endpoint: "soap-notes" },
+  self: { label: "Self Assessment", endpoint: "self-assessments" },
+  intake: { label: "Intake Form", endpoint: "intakes" },
 };
 
 export default function NoteViewer() {
@@ -160,7 +160,7 @@ export default function NoteViewer() {
       setLoading(true);
       setErr("");
       try {
-        const res = await fetch(`http://localhost:8080/${meta.endpoint}/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/${meta.endpoint}/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(`Failed to load ${meta.label.toLowerCase()}`);
@@ -192,8 +192,8 @@ export default function NoteViewer() {
   const pickSelected = (obj) =>
     obj && typeof obj === "object"
       ? Object.entries(obj)
-          .filter(([, v]) => !!v)
-          .map(([k]) => desanitize(k))
+        .filter(([, v]) => !!v)
+        .map(([k]) => desanitize(k))
       : [];
 
   return (
@@ -392,8 +392,8 @@ export default function NoteViewer() {
                       data.healthHistory?.medications
                         ? data.healthHistory?.medicationsList || "Yes (unspecified)"
                         : data.healthHistory
-                        ? "No"
-                        : "—"
+                          ? "No"
+                          : "—"
                     }
                   />
                   <ReadOnlyArea

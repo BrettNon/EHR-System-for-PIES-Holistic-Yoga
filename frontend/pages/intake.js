@@ -5,9 +5,35 @@ import { CheckBoxGroup } from "../components/CheckBoxGroup";
 import { SignaturePadField } from "../components/SignaturePadField";
 import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../utils/api";
+import { API_BASE_URL } from "../utils/config";
 
 /** 50 U.S. states (two-letter codes) */
 const US_STATES = [
+  { abbr: "AL", name: "Alabama" }, { abbr: "AK", name: "Alaska" },
+  { abbr: "AZ", name: "Arizona" }, { abbr: "AR", name: "Arkansas" },
+  { abbr: "CA", name: "California" }, { abbr: "CO", name: "Colorado" },
+  { abbr: "CT", name: "Connecticut" }, { abbr: "DE", name: "Delaware" },
+  { abbr: "FL", name: "Florida" }, { abbr: "GA", name: "Georgia" },
+  { abbr: "HI", name: "Hawaii" }, { abbr: "ID", name: "Idaho" },
+  { abbr: "IL", name: "Illinois" }, { abbr: "IN", name: "Indiana" },
+  { abbr: "IA", name: "Iowa" }, { abbr: "KS", name: "Kansas" },
+  { abbr: "KY", name: "Kentucky" }, { abbr: "LA", name: "Louisiana" },
+  { abbr: "ME", name: "Maine" }, { abbr: "MD", name: "Maryland" },
+  { abbr: "MA", name: "Massachusetts" }, { abbr: "MI", name: "Michigan" },
+  { abbr: "MN", name: "Minnesota" }, { abbr: "MS", name: "Mississippi" },
+  { abbr: "MO", name: "Missouri" }, { abbr: "MT", name: "Montana" },
+  { abbr: "NE", name: "Nebraska" }, { abbr: "NV", name: "Nevada" },
+  { abbr: "NH", name: "New Hampshire" }, { abbr: "NJ", name: "New Jersey" },
+  { abbr: "NM", name: "New Mexico" }, { abbr: "NY", name: "New York" },
+  { abbr: "NC", name: "North Carolina" }, { abbr: "ND", name: "North Dakota" },
+  { abbr: "OH", name: "Ohio" }, { abbr: "OK", name: "Oklahoma" },
+  { abbr: "OR", name: "Oregon" }, { abbr: "PA", name: "Pennsylvania" },
+  { abbr: "RI", name: "Rhode Island" }, { abbr: "SC", name: "South Carolina" },
+  { abbr: "SD", name: "South Dakota" }, { abbr: "TN", name: "Tennessee" },
+  { abbr: "TX", name: "Texas" }, { abbr: "UT", name: "Utah" },
+  { abbr: "VT", name: "Vermont" }, { abbr: "VA", name: "Virginia" },
+  { abbr: "WA", name: "Washington" }, { abbr: "WV", name: "West Virginia" },
+  { abbr: "WI", name: "Wisconsin" }, { abbr: "WY", name: "Wyoming" },
   { abbr: "AL", name: "Alabama" }, { abbr: "AK", name: "Alaska" },
   { abbr: "AZ", name: "Arizona" }, { abbr: "AR", name: "Arkansas" },
   { abbr: "CA", name: "California" }, { abbr: "CO", name: "Colorado" },
@@ -38,14 +64,39 @@ const US_STATES = [
 const yogaStyles = [
   "Hatha", "Ashtanga", "Vinyasa/Flow", "Iyengar", "Power", "Anusara",
   "Bikram/Hot", "Forrest", "Kundalini", "Gentle", "Restorative", "Yin"
+  "Hatha", "Ashtanga", "Vinyasa/Flow", "Iyengar", "Power", "Anusara",
+  "Bikram/Hot", "Forrest", "Kundalini", "Gentle", "Restorative", "Yin"
 ];
 
 const activityLevels = [
   "Sedentary/Very inactive", "Somewhat inactive", "Average",
   "Somewhat active", "Extremely active"
+  "Sedentary/Very inactive", "Somewhat inactive", "Average",
+  "Somewhat active", "Extremely active"
 ];
 
 const physicalHistoryOptions = [
+  { label: "Broken/Dislocated bones", key: "brokenBones" },
+  { label: "Muscle strain/sprain", key: "muscleStrain" },
+  { label: "Arthritis/Bursitis", key: "arthritisBursitis" },
+  { label: "Disc problems", key: "discProblems" },
+  { label: "Scoliosis", key: "scoliosis" },
+  { label: "Back problems", key: "backProblems" },
+  { label: "Osteoporosis", key: "osteoporosis" },
+  { label: "Diabetes (type 1 or 2)", key: "diabetes" },
+  { label: "High/Low blood pressure", key: "bloodPressure" },
+  { label: "Insomnia", key: "insomnia" },
+  { label: "Anxiety/Depression", key: "anxietyDepression" },
+  { label: "Asthma / Short breath", key: "asthma" },
+  { label: "Numbness / Tingling", key: "numbnessTingling" },
+  { label: "Cancer", key: "cancer" },
+  { label: "Seizures", key: "seizures" },
+  { label: "Stroke", key: "stroke" },
+  { label: "Heart conditions / Chest pain", key: "heartConditions" },
+  { label: "Pregnancy", key: "pregnancy" },
+  { label: "Auto-immune condition", key: "autoimmune" },
+  { label: "Surgery", key: "surgery" },
+  { label: "Medications", key: "medications" }
   { label: "Broken/Dislocated bones", key: "brokenBones" },
   { label: "Muscle strain/sprain", key: "muscleStrain" },
   { label: "Arthritis/Bursitis", key: "arthritisBursitis" },
@@ -79,12 +130,21 @@ const MAX = {
   address: 255,
   city: 100,
   emergencyContactName: 100,
+  firstName: 100,
+  lastName: 100,
+  address: 255,
+  city: 100,
+  emergencyContactName: 100,
 };
 
 const MAX_NOTE = 255;
 
 const digitsOnly = (s = "") => s.replace(/\D/g, "");
 const formatUSPhone = (s = "") => {
+  const d = digitsOnly(s).slice(0, 10);
+  if (d.length < 4) return d;
+  if (d.length < 7) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
   const d = digitsOnly(s).slice(0, 10);
   if (d.length < 4) return d;
   if (d.length < 7) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
@@ -122,42 +182,25 @@ export default function IntakeFormPage() {
   const practicedBefore = watch("practicedBefore");
   const todayYmd = new Date().toISOString().split("T")[0];
 
-  const myTherapistId =
-    typeof window !== "undefined" ? String(localStorage.getItem("therapistId") || "") : "";
-
   // Load therapists
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiFetch("http://localhost:8080/therapists/active");
+        const res = await apiFetch(`${API_BASE_URL}/therapists/active`);
         if (!res.ok) throw new Error("Failed to load therapists");
         const data = await res.json();
-        setTherapists(data || []);
+        setTherapists(data);
       } catch (err) {
         console.error("Error loading therapists:", err);
       }
     })();
   }, []);
 
-  // Prefill intake's therapistId with current therapist (hidden input)
-  useEffect(() => {
-    if (myTherapistId) setValue("therapistId", myTherapistId);
-  }, [myTherapistId, setValue]);
-
-  // When creating a NEW client, default the "Assign Therapist" to me (or first therapist)
-  const isExisting = !!selectedPatient;
-  useEffect(() => {
-    if (isExisting) return; // don't touch when existing client is selected
-    const mine = therapists.find((t) => String(t.id) === String(myTherapistId));
-    const fallback = therapists[0]?.id ? String(therapists[0].id) : "";
-    setValue("newClientTherapistId", mine ? String(mine.id) : fallback);
-  }, [therapists, myTherapistId, isExisting, setValue]);
-
   // Load patients (you can swap this to a server-side search later)
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiFetch("http://localhost:8080/patients?page=0&size=500");
+        const res = await apiFetch(`${API_BASE_URL}/patients?page=0&size=500`);
         if (!res.ok) throw new Error("Failed to load patients");
         const page = await res.json();
         setPatients(page.content || []);
@@ -243,7 +286,7 @@ export default function IntakeFormPage() {
 
     // Base payload
     const payload = {
-      therapistId: parseInt(data.therapistId) || null, // therapist creating the intake (hidden, from localStorage)
+      therapistId: parseInt(data.therapistId) || null,
       intakeDate: today,
       practicedYogaBefore: data.practicedBefore === "yes",
       lastPracticedDate: data.lastPracticeDate || null,
@@ -260,53 +303,54 @@ export default function IntakeFormPage() {
       healthHistory,
     };
 
-    // If user selected an existing client → send patientId, otherwise send patient object with therapist assignment
+    // If user selected an existing client → send patientId, otherwise send patient object
     payload.patient = selectedPatient?.id
       ? {
-          id: selectedPatient.id,
-          firstName: selectedPatient.firstName || watch("firstName") || "",
-          lastName: selectedPatient.lastName || watch("lastName") || "",
-          dateOfBirth: selectedPatient.dateOfBirth || watch("dob") || null,
-          address: selectedPatient.address || "",
-          city: selectedPatient.city || "",
-          state: selectedPatient.state || "", // 2-letter
-          zipCode: (selectedPatient.zipCode || "").replace(/\D/g, "").slice(0, 5),
-          email: selectedPatient.email || "",
-          homePhoneNumber: (selectedPatient.homePhoneNumber || "").replace(/\D/g, "").slice(0, 10),
-          cellPhoneNumber: (selectedPatient.cellPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
-          workPhoneNumber: (selectedPatient.workPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
-          emergencyContactName: selectedPatient.emergencyContactName || "",
-          emergencyContactPhone: (selectedPatient.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
-          referredBy: selectedPatient.referredBy || "",
-          dateCreated: selectedPatient.dateCreated || selectedPatient.createdAt || undefined,
-        }
-      : {
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          dateOfBirth: data.dob,
-          address: data.address,
-          city: data.city,
-          state: data.state, // two-letter code
-          zipCode: (data.zipCode || "").replace(/\D/g, "").slice(0, 5),
-          email: data.email,
-          homePhoneNumber: (data.homePhone || "").replace(/\D/g, "").slice(0, 10),
-          cellPhoneNumber: (data.cellPhone || "").replace(/\D/g, "").slice(0, 10),
-          workPhoneNumber: (data.workPhone || "").replace(/\D/g, "").slice(0, 10),
-          emergencyContactName: data.emergencyContactName,
-          emergencyContactPhone: (data.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
-          referredBy: data.referredBy,
-          dateCreated: today,
-          therapistId: data.newClientTherapistId ? Number(data.newClientTherapistId) : null, // NEW: assign therapist to the new client
-        };
+        id: selectedPatient.id,
+        firstName: selectedPatient.firstName || watch("firstName") || "",
+        lastName: selectedPatient.lastName || watch("lastName") || "",
+        dateOfBirth: selectedPatient.dateOfBirth || watch("dob") || null,
 
-    // guard: when creating a new client, therapist selection is required
-    if (!isExisting && !payload.patient.therapistId) {
-      alert("Please select a therapist for the new client.");
-      return;
-    }
+        address: selectedPatient.address || "",
+        city: selectedPatient.city || "",
+        state: selectedPatient.state || "",                // should be 2-letter
+        zipCode: (selectedPatient.zipCode || "").replace(/\D/g, "").slice(0, 5),
+
+        email: selectedPatient.email || "",
+        homePhoneNumber: (selectedPatient.homePhoneNumber || "").replace(/\D/g, "").slice(0, 10),
+        cellPhoneNumber: (selectedPatient.cellPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
+        workPhoneNumber: (selectedPatient.workPhoneNumber || "").replace(/\D/g, "").slice(0, 10),
+
+        emergencyContactName: selectedPatient.emergencyContactName || "",
+        emergencyContactPhone: (selectedPatient.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
+
+        referredBy: selectedPatient.referredBy || "",
+        dateCreated: selectedPatient.dateCreated || selectedPatient.createdAt || undefined,
+      }
+      : {
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        dateOfBirth: data.dob,
+
+        address: data.address,
+        city: data.city,
+        state: data.state,                                // two-letter code
+        zipCode: (data.zipCode || "").replace(/\D/g, "").slice(0, 5),
+
+        email: data.email,
+        homePhoneNumber: (data.homePhone || "").replace(/\D/g, "").slice(0, 10),
+        cellPhoneNumber: (data.cellPhone || "").replace(/\D/g, "").slice(0, 10),
+        workPhoneNumber: (data.workPhone || "").replace(/\D/g, "").slice(0, 10),
+
+        emergencyContactName: data.emergencyContactName,
+        emergencyContactPhone: (data.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
+
+        referredBy: data.referredBy,
+        dateCreated: today,
+      };
 
     try {
-      const res = await apiFetch("http://localhost:8080/intakes", {
+      const res = await apiFetch(`${API_BASE_URL}/intakes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -320,8 +364,6 @@ export default function IntakeFormPage() {
       setSelectedPatient(null);
       setSearch("");
       reset();
-      // keep hidden therapistId set for next intake
-      if (myTherapistId) setValue("therapistId", myTherapistId);
     } catch (err) {
       console.error("Submission error:", err);
       alert(err.message || "Error submitting intake form.");
@@ -329,13 +371,10 @@ export default function IntakeFormPage() {
   };
 
   // Conditional required rules: if an existing client is selected, don't require profile fields here
-  const isExistingComputed = isExisting; // alias for clarity
+  const isExisting = !!selectedPatient;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
-      {/* hidden intake therapist id (performing therapist) */}
-      <input type="hidden" {...register("therapistId")} />
-
       {/* --- Client picker --- */}
       <div>
         <label className="block text-sm font-medium text-brandLavender mb-1">Client</label>
@@ -416,31 +455,6 @@ export default function IntakeFormPage() {
         </p>
       </div>
 
-      {/* Assign Therapist for NEW client only */}
-      {!isExisting && (
-        <div>
-          <label className="block font-medium mb-1">Assign Therapist *</label>
-          <select
-            className="border rounded p-2 w-full"
-            {...register("newClientTherapistId", {
-              required: "Please select a therapist for the new client",
-            })}
-            defaultValue=""
-          >
-            <option value="">— Select therapist —</option>
-            {therapists.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-          {errors.newClientTherapistId && (
-            <p className="text-red-600 text-xs mt-1">{errors.newClientTherapistId.message}</p>
-          )}
-          <p className="text-xs text-gray-500 mt-1">
-            This appears only when creating a new client.
-          </p>
-        </div>
-      )}
-
       {/* --- Personal Info --- */}
       <h2 className="text-xl font-semibold text-brandLavender">Confidential Information</h2>
       <div className="grid md:grid-cols-2 gap-4">
@@ -450,11 +464,11 @@ export default function IntakeFormPage() {
             label="First Name"
             name="firstName"
             register={register}
-            required={!isExistingComputed}
+            required={!isExisting}
             maxLength={MAX.firstName}
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("firstName", {
-              required: !isExistingComputed ? "First name is required" : false,
+              required: !isExisting ? "First name is required" : false,
               maxLength: { value: MAX.firstName, message: "Too many characters" },
             })}
           />
@@ -467,11 +481,11 @@ export default function IntakeFormPage() {
             label="Last Name"
             name="lastName"
             register={register}
-            required={!isExistingComputed}
+            required={!isExisting}
             maxLength={MAX.lastName}
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("lastName", {
-              required: !isExistingComputed ? "Last name is required" : false,
+              required: !isExisting ? "Last name is required" : false,
               maxLength: { value: MAX.lastName, message: "Too many characters" },
             })}
           />
@@ -484,10 +498,10 @@ export default function IntakeFormPage() {
           name="dob"
           type="date"
           register={register}
-          required={!isExistingComputed}
-          disabled={isExistingComputed}
+          required={!isExisting}
+          disabled={isExisting}
           {...register("dob", {
-            required: !isExistingComputed ? "Date of birth is required" : false,
+            required: !isExisting ? "Date of birth is required" : false,
             validate: (v) => (!v || v <= todayYmd) || "DOB cannot be in the future",
           })}
         />
@@ -498,12 +512,12 @@ export default function IntakeFormPage() {
             label="Address"
             name="address"
             register={register}
-            required={!isExistingComputed}
+            required={!isExisting}
             maxLength={MAX.address}
             className="w-full"
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("address", {
-              required: !isExistingComputed ? "Address is required" : false,
+              required: !isExisting ? "Address is required" : false,
               maxLength: { value: MAX.address, message: "Too many characters" },
             })}
           />
@@ -517,11 +531,11 @@ export default function IntakeFormPage() {
             label="City"
             name="city"
             register={register}
-            required={!isExistingComputed}
+            required={!isExisting}
             maxLength={MAX.city}
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("city", {
-              required: !isExistingComputed ? "City is required" : false,
+              required: !isExisting ? "City is required" : false,
               maxLength: { value: MAX.city, message: "Too many characters" },
             })}
           />
@@ -534,9 +548,9 @@ export default function IntakeFormPage() {
           <label className="block font-medium mb-1">State</label>
           <select
             className="border rounded p-2 w-full"
-            {...register("state", { required: !isExistingComputed ? "State is required" : false })}
+            {...register("state", { required: !isExisting ? "State is required" : false })}
             defaultValue=""
-            disabled={isExistingComputed}
+            disabled={isExisting}
           >
             <option value="" disabled>— Select —</option>
             {US_STATES.map((s) => (
@@ -553,9 +567,9 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="#####"
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("zipCode", {
-              required: !isExistingComputed ? "Zip code is required" : false,
+              required: !isExisting ? "Zip code is required" : false,
               pattern: { value: /^\d{5}$/, message: "Use exactly 5 digits" },
               onChange: (e) => { e.target.value = digitsOnly(e.target.value).slice(0, 5); },
             })}
@@ -570,7 +584,7 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="(555) 555-5555"
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("homePhone", {
               onChange: (e) => { e.target.value = formatUSPhone(e.target.value); },
               pattern: { value: /^\(?\d{3}\)?[ ]?\d{3}-\d{4}$/, message: "Format: (555) 555-5555" },
@@ -585,7 +599,7 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="(555) 555-5555"
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("cellPhone", {
               onChange: (e) => { e.target.value = formatUSPhone(e.target.value); },
               pattern: { value: /^\(?\d{3}\)?[ ]?\d{3}-\d{4}$/, message: "Format: (555) 555-5555" },
@@ -600,7 +614,7 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="(555) 555-5555"
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("workPhone", {
               onChange: (e) => { e.target.value = formatUSPhone(e.target.value); },
               pattern: { value: /^\(?\d{3}\)?[ ]?\d{3}-\d{4}$/, message: "Format: (555) 555-5555" },
@@ -609,9 +623,9 @@ export default function IntakeFormPage() {
           {errors.workPhone && <p className="text-red-600 text-xs mt-1">{errors.workPhone.message}</p>}
         </div>
 
-        <TextInput label="Email" name="email" type="email" register={register} disabled={isExistingComputed} />
+        <TextInput label="Email" name="email" type="email" register={register} disabled={isExisting} />
 
-        <TextInput label="Occupation" name="occupation" register={register} disabled={isExistingComputed} />
+        <TextInput label="Occupation" name="occupation" register={register} disabled={isExisting} />
 
         {/* Emergency contact name + counter */}
         <div>
@@ -619,11 +633,11 @@ export default function IntakeFormPage() {
             label="Emergency Contact Name"
             name="emergencyContactName"
             register={register}
-            required={!isExistingComputed}
+            required={!isExisting}
             maxLength={MAX.emergencyContactName}
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("emergencyContactName", {
-              required: !isExistingComputed ? "Emergency contact name is required" : false,
+              required: !isExisting ? "Emergency contact name is required" : false,
               maxLength: { value: MAX.emergencyContactName, message: "Too many characters" },
             })}
           />
@@ -640,9 +654,9 @@ export default function IntakeFormPage() {
             inputMode="numeric"
             className="border rounded p-2 w-full"
             placeholder="(555) 555-5555"
-            disabled={isExistingComputed}
+            disabled={isExisting}
             {...register("emergencyContactPhone", {
-              required: !isExistingComputed ? "Emergency contact phone is required" : false,
+              required: !isExisting ? "Emergency contact phone is required" : false,
               onChange: (e) => { e.target.value = formatUSPhone(e.target.value); },
               pattern: { value: /^\(?\d{3}\)?[ ]?\d{3}-\d{4}$/, message: "Format: (555) 555-5555" },
             })}
@@ -652,7 +666,7 @@ export default function IntakeFormPage() {
           )}
         </div>
 
-        <TextInput label="Referred By" name="referredBy" register={register} className="md:col-span-2" disabled={isExistingComputed} />
+        <TextInput label="Referred By" name="referredBy" register={register} className="md:col-span-2" disabled={isExisting} />
       </div>
 
       {practicedBefore === "yes" && (
@@ -723,7 +737,7 @@ export default function IntakeFormPage() {
       </div>
 
       <CheckBoxGroup title="Physical History" namePrefix="physicalHistory" options={physicalHistoryOptions}
-                     register={register} />
+        register={register} />
       {/* Other / Explain */}
       <div>
         <label className="block font-medium mb-1">Other / Explain</label>
@@ -762,8 +776,8 @@ export default function IntakeFormPage() {
         )}
       </div>
 
-      {/* (Note: duplicated blocks from original retained) */}
       <CheckBoxGroup title="Physical History" namePrefix="physicalHistory" options={physicalHistoryOptions} register={register} />
+      {/* Other / Explain */}
       <div>
         <label className="block font-medium mb-1">Other / Explain</label>
         <textarea

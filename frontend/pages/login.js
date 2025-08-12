@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { API_BASE_URL } from "../utils/config";
 
 const ROLE_LABELS = {
   ADMIN: "Admin",
@@ -11,7 +12,7 @@ const ROLE_LABELS = {
 /* ————————————————— API helpers ————————————————— */
 
 async function loginRequest(username, password) {
-  const res = await fetch("http://localhost:8080/auth/login", {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
@@ -25,7 +26,7 @@ async function registerRequest(payload) {
   if (!token)
     throw new Error("Must be logged in as ADMIN to create accounts");
 
-  const res = await fetch("http://localhost:8080/auth/register", {
+  const res = await fetch(`${API_BASE_URL}/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

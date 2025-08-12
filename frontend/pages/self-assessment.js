@@ -1,9 +1,10 @@
-import React, {useState, useEffect, useRef} from "react";
-import {useForm} from "react-hook-form";
-import {TextInput} from "../components/TextInput";
-import {CheckBoxGroup} from "../components/CheckBoxGroup";
-import {apiFetch} from "../utils/api";
-import {SearchIcon, XIcon} from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { TextInput } from "../components/TextInput";
+import { CheckBoxGroup } from "../components/CheckBoxGroup";
+import { apiFetch } from "../utils/api";
+import { SearchIcon, XIcon } from "lucide-react";
+import { API_BASE_URL } from "../utils/config";
 
 const yogaStyles = [
     "Hatha", "Ashtanga", "Vinyasa/Flow", "Iyengar", "Power", "Anusara",
@@ -25,7 +26,7 @@ const physicalHistoryConditions = [
 ];
 
 export function SelfAssessmentPage() {
-    const {register, handleSubmit, reset, setValue, formState: {errors}} = useForm();
+    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
     const [patients, setPatients] = useState([]);
     const [query, setQuery] = useState("");
@@ -43,8 +44,8 @@ export function SelfAssessmentPage() {
         if (!token) return;
         (async () => {
             try {
-                const res = await fetch("http://localhost:8080/patients?page=0&size=500", {
-                    headers: {Authorization: `Bearer ${token}`},
+                const res = await fetch(`${API_BASE_URL}/patients?page=0&size=500`, {
+                    headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!res.ok) throw new Error("Failed to load patients");
                 const page = await res.json();
@@ -67,14 +68,14 @@ export function SelfAssessmentPage() {
     );
 
     const choosePatient = (p) => {
-        setValue("patientId", p.id, {shouldValidate: true});
+        setValue("patientId", p.id, { shouldValidate: true });
         setQuery(p.name);
         setSelectedPatientId(p.id);
         setOpenDropdown(false);
     };
 
     const clearPatient = () => {
-        setValue("patientId", "", {shouldValidate: true});
+        setValue("patientId", "", { shouldValidate: true });
         setQuery("");
         setOpenDropdown(false);
         inputRef.current?.focus();
@@ -122,7 +123,7 @@ export function SelfAssessmentPage() {
             notes: JSON.stringify(d)
         };
 
-        apiFetch("http://localhost:8080/self-assessments", {
+        apiFetch(`${API_BASE_URL}/self-assessments`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -167,7 +168,7 @@ export function SelfAssessmentPage() {
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto">
-            <input type="hidden" {...register("patientId", {required: true})} />
+            <input type="hidden" {...register("patientId", { required: true })} />
 
             <div className="relative" ref={dropdownRef}>
                 <label className="block font-medium mb-1">Patient</label>
@@ -176,27 +177,26 @@ export function SelfAssessmentPage() {
                         ref={inputRef}
                         type="text"
                         placeholder="Search patient…"
-                        className={`w-full border rounded pl-8 pr-9 py-2 ${
-                            errors.patientId ? "border-red-500" : ""
-                        }`}
+                        className={`w-full border rounded pl-8 pr-9 py-2 ${errors.patientId ? "border-red-500" : ""
+                            }`}
                         value={query}
                         onChange={(e) => {
                             setQuery(e.target.value);
                             setOpenDropdown(true);
                             setHighlightIdx(0);
-                            setValue("patientId", "", {shouldValidate: true});
+                            setValue("patientId", "", { shouldValidate: true });
                         }}
                         onFocus={() => setOpenDropdown(true)}
                         onKeyDown={onPatientKeyDown}
                     />
-                    <SearchIcon size={18} className="absolute left-2 top-2.5 text-gray-400"/>
+                    <SearchIcon size={18} className="absolute left-2 top-2.5 text-gray-400" />
                     {query && (
                         <button
                             type="button"
                             className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600"
                             onClick={clearPatient}
                         >
-                            <XIcon size={16}/>
+                            <XIcon size={16} />
                         </button>
                     )}
                 </div>
@@ -206,9 +206,8 @@ export function SelfAssessmentPage() {
                         {filteredPatients.map((p, idx) => (
                             <li
                                 key={p.id}
-                                className={`px-3 py-2 cursor-pointer text-sm ${
-                                    idx === highlightIdx ? "bg-brandLavender/10 text-brandLavender" : "hover:bg-gray-100"
-                                }`}
+                                className={`px-3 py-2 cursor-pointer text-sm ${idx === highlightIdx ? "bg-brandLavender/10 text-brandLavender" : "hover:bg-gray-100"
+                                    }`}
                                 onMouseDown={(e) => {
                                     e.preventDefault();
                                     choosePatient(p);
@@ -228,7 +227,7 @@ export function SelfAssessmentPage() {
 
             <div>
                 <label className="block font-medium mb-1">Date of Session</label>
-                <input type="date" {...register("dateOfSession")} required className="w-full border rounded p-2"/>
+                <input type="date" {...register("dateOfSession")} required className="w-full border rounded p-2" />
             </div>
 
             {[
@@ -243,19 +242,19 @@ export function SelfAssessmentPage() {
             ].map((q, i) => (
                 <div key={i}>
                     <label className="block font-medium mb-1">{q}</label>
-                    <textarea {...register(`q${i}`)} rows="3" className="w-full border rounded p-2"/>
+                    <textarea {...register(`q${i}`)} rows="3" className="w-full border rounded p-2" />
                 </div>
             ))}
 
-            <CheckBoxGroup title="Koshas" namePrefix="koshas" options={koshas} register={register}/>
-            <CheckBoxGroup title="Asana" namePrefix="asana" options={asana} register={register}/>
-            <CheckBoxGroup title="Mindfulness" namePrefix="mindfulness" options={mindfulness} register={register}/>
-            <CheckBoxGroup title="Kleshas" namePrefix="kleshas" options={kleshas} register={register}/>
-            <CheckBoxGroup title="Chakras" namePrefix="chakras" options={chakras} register={register}/>
-            <CheckBoxGroup title="Pranayama" namePrefix="pranayama" options={pranayama} register={register}/>
+            <CheckBoxGroup title="Koshas" namePrefix="koshas" options={koshas} register={register} />
+            <CheckBoxGroup title="Asana" namePrefix="asana" options={asana} register={register} />
+            <CheckBoxGroup title="Mindfulness" namePrefix="mindfulness" options={mindfulness} register={register} />
+            <CheckBoxGroup title="Kleshas" namePrefix="kleshas" options={kleshas} register={register} />
+            <CheckBoxGroup title="Chakras" namePrefix="chakras" options={chakras} register={register} />
+            <CheckBoxGroup title="Pranayama" namePrefix="pranayama" options={pranayama} register={register} />
 
-            <TextInput label="Other Mindfulness" name="otherMindfulness" register={register}/>
-            <TextInput label="Other Pranayama" name="otherPranayama" register={register}/>
+            <TextInput label="Other Mindfulness" name="otherMindfulness" register={register} />
+            <TextInput label="Other Pranayama" name="otherPranayama" register={register} />
 
             <button type="submit" className="bg-brandLavender text-white px-6 py-2 rounded">
                 Save

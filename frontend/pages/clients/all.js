@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { SearchIcon, Trash2Icon, SlidersHorizontal } from "lucide-react";
+import { API_BASE_URL } from "../../utils/config";
 
 // add near top of the file
 const STATE_MAP = {
@@ -112,10 +113,10 @@ export default function AllClientsPage() {
   const fmtFullDate = (ymd) =>
     ymd
       ? new Intl.DateTimeFormat(undefined, {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }).format(parseYmd(ymd))
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }).format(parseYmd(ymd))
       : "—";
   const toYmd = (s) => (typeof s === "string" ? s.slice(0, 10) : "");
   const calcAgeFromYmd = (ymd) => {
@@ -153,7 +154,7 @@ export default function AllClientsPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/patients?page=0&size=100", {
+      const res = await fetch(`${API_BASE_URL}/patients?page=0&size=100`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to load patients");
@@ -202,7 +203,7 @@ export default function AllClientsPage() {
   const deleteClient = async (id) => {
     if (!confirm("Delete this client?")) return;
     try {
-      const res = await fetch(`http://localhost:8080/patients/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/patients/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -212,7 +213,7 @@ export default function AllClientsPage() {
         let message = "Delete failed";
         try {
           message = JSON.parse(text).message || message;
-        } catch (_) {}
+        } catch (_) { }
         throw new Error(message);
       }
       setClients((prev) => prev.filter((c) => c.id !== id));
@@ -234,7 +235,7 @@ export default function AllClientsPage() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:8080/patients", {
+      const res = await fetch(`${API_BASE_URL}/patients`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
