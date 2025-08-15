@@ -19,9 +19,9 @@ Developed as an academic capstone project, the system was built with **Spring Bo
 ---
 
 ## Architecture
-frontend/ → Next.js + Tailwind CSS + react-hook-form UI
-backend/ → Spring Boot 3.5.x API + MySQL + JWT auth + Flyway migrations
-database/ → MySQL 8 in Docker with schema managed by Flyway
+- frontend/ → Next.js + Tailwind CSS + react-hook-form UI
+- backend/ → Spring Boot 3.5.x API + MySQL + JWT auth + Flyway migrations
+- database/ → MySQL 8 in Docker with schema managed by Flyway
 
 
 **Backend Tech Stack:**
