@@ -1,10 +1,23 @@
 # EHR-System-for-PIES-Fitness-Yoga
 
 ## Overview
-A full-stack Electronic Health Record (EHR) platform designed for [**PIES Fitness Yoga**](https://www.piesfitnessyoga.com/), enabling yoga therapists to securely manage client records, track session history, and complete therapy documentation.  
-Developed as an academic capstone project, the system was built with **Spring Boot** and **Next.js** to deliver a responsive, secure, and role-based experience.
+A full-stack Electronic Health Record (EHR) platform built for [**PIES Fitness Yoga**](https://www.piesfitnessyoga.com/), designed to help yoga therapists securely manage client records, track session histories, and complete therapy documentation efficiently.  
 
-> **Note:** While HIPAA security principles were considered during development (JWT authentication, encrypted connections, role-based access), full HIPAA-compliant deployment was not pursued due to hosting, legal, and audit constraints.
+This project was developed as part of the **CS 5394 – Capstone Project** for the [**Virginia Tech Master of Engineering in Computer Science**](https://iac.vt.edu/masters-degrees/meng-cs.html) program. The system leverages **Spring Boot** on the backend and **Next.js** on the frontend to provide a responsive, secure, and role-based user experience.  
+
+> **Note:** While HIPAA-aligned security practices (JWT authentication, encrypted connections, role-based access control) were implemented, full HIPAA compliance was not pursued due to constraints related to hosting, legal requirements, and audit readiness.
+
+---
+
+## License
+This project is licensed under the [Creative Commons Attribution (CC BY 4.0) License](https://creativecommons.org/licenses/by/4.0/).
+
+You are free to:
+- **Share** — copy and redistribute the material in any medium or format  
+- **Adapt** — remix, transform, and build upon the material for any purpose, even commercially  
+
+Under the following terms:
+- **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
 
 ---
 
@@ -86,7 +99,7 @@ npm run dev
 - **James Yeh** – [jamesyeh-vt](https://github.com/jamesyeh-vt)  
   Primary backend developer, designed and implemented the Spring Boot API, managed database schema and migrations, and configured security/authentication.
 
-
+---
 ## Client
 
 **[PIES Fitness Yoga](https://www.piesfitnessyoga.com/)**  
@@ -96,4 +109,3 @@ The studio emphasizes a holistic approach — conditioning the body to foster cl
 
 **Founder/Owner:** *Marsha Banks-Harold*  
 **Project Sponsor:** *[Dr. Tessema Mindaye Mengistu](https://scholar.google.com/citations?user=x9JJf_AAAAAJ&hl=en)* — Took over as project sponsor during Sprint 4.
-
