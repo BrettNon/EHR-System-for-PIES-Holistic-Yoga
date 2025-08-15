@@ -109,6 +109,7 @@ export default function IntakeFormPage() {
     reset,
     watch,
     setValue,
+    getValues,
     formState: { errors, isValid },
   } = useForm({ mode: "onChange" });
 
@@ -119,6 +120,9 @@ export default function IntakeFormPage() {
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [openList, setOpenList] = useState(false);
+
+  // NOTE: computed flag to distinguish existing vs new client
+  const isExisting = !!selectedPatient;
 
   const practicedBefore = watch("practicedBefore");
   const todayYmd = new Date().toISOString().split("T")[0];
@@ -141,17 +145,21 @@ export default function IntakeFormPage() {
   }, []);
 
   // Prefill intake's therapistId with current therapist (hidden input)
+  // NOTE (updated): only apply when NOT using an existing client; otherwise a later effect will set from the selected patient.
   useEffect(() => {
-    if (myTherapistId) setValue("therapistId", myTherapistId);
-  }, [myTherapistId, setValue]);
+    if (!isExisting && myTherapistId) {
+      setValue("therapistId", Number(myTherapistId), { shouldValidate: true });
+    }
+  }, [myTherapistId, setValue, isExisting]);
 
   // When creating a NEW client, default the "Assign Therapist" to me (or first therapist)
-  const isExisting = !!selectedPatient;
+  // NOTE (updated): use the single field "therapistId" instead of a separate newClientTherapistId.
   useEffect(() => {
     if (isExisting) return; // don't touch when existing client is selected
     const mine = therapists.find((t) => String(t.id) === String(myTherapistId));
-    const fallback = therapists[0]?.id ? String(therapists[0].id) : "";
-    setValue("newClientTherapistId", mine ? String(mine.id) : fallback);
+    const fallback = therapists[0]?.id;
+    if (mine?.id) setValue("therapistId", Number(mine.id), { shouldValidate: true });
+    else if (fallback) setValue("therapistId", Number(fallback), { shouldValidate: true });
   }, [therapists, myTherapistId, isExisting, setValue]);
 
   // Load patients (you can swap this to a server-side search later)
@@ -187,6 +195,24 @@ export default function IntakeFormPage() {
     setValue("emergencyContactPhone", p.emergencyContactPhone ? formatUSPhone(p.emergencyContactPhone) : "");
     setValue("referredBy", p.referredBy || "");
   }, [selectedPatient, setValue]);
+
+  // NOTE (new): when a patient is picked, set therapistId from the patient's assigned therapist (if available).
+  // Adjust the property name below to match your backend payload shape.
+  useEffect(() => {
+    if (!selectedPatient) return;
+    const p = selectedPatient;
+    const assigned =
+      p.therapistId ??
+      p.primaryTherapistId ??
+      (p.therapist && p.therapist.id) ??
+      null;
+
+    if (assigned) {
+      setValue("therapistId", Number(assigned), { shouldValidate: true });
+    } else if (myTherapistId) {
+      setValue("therapistId", Number(myTherapistId), { shouldValidate: true });
+    }
+  }, [selectedPatient, myTherapistId, setValue]);
 
   // Suggestions
   const suggestions = useMemo(() => {
@@ -244,7 +270,7 @@ export default function IntakeFormPage() {
 
     // Base payload
     const payload = {
-      therapistId: parseInt(data.therapistId) || null, // therapist creating the intake (hidden, from localStorage)
+      therapistId: Number.isFinite(data.therapistId) ? data.therapistId : null, // single source of truth for therapist
       intakeDate: today,
       practicedYogaBefore: data.practicedBefore === "yes",
       lastPracticedDate: data.lastPracticeDate || null,
@@ -297,11 +323,11 @@ export default function IntakeFormPage() {
         emergencyContactPhone: (data.emergencyContactPhone || "").replace(/\D/g, "").slice(0, 10),
         referredBy: data.referredBy,
         dateCreated: today,
-        therapistId: data.newClientTherapistId ? Number(data.newClientTherapistId) : null, // NEW: assign therapist to the new client
+        therapistId: Number.isFinite(data.therapistId) ? data.therapistId : null, // assign the same single field for new client
       };
 
     // guard: when creating a new client, therapist selection is required
-    if (!isExisting && !payload.patient.therapistId) {
+    if (!isExisting && !Number.isFinite(data.therapistId)) {
       alert("Please select a therapist for the new client.");
       return;
     }
@@ -321,8 +347,8 @@ export default function IntakeFormPage() {
       setSelectedPatient(null);
       setSearch("");
       reset();
-      // keep hidden therapistId set for next intake
-      if (myTherapistId) setValue("therapistId", myTherapistId);
+      // keep therapistId set for next intake (defaults to current therapist when no existing client)
+      if (myTherapistId) setValue("therapistId", Number(myTherapistId));
     } catch (err) {
       console.error("Submission error:", err);
       alert(err.message || "Error submitting intake form.");
@@ -335,7 +361,7 @@ export default function IntakeFormPage() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
       {/* hidden intake therapist id (performing therapist) */}
-      <input type="hidden" {...register("therapistId")} />
+      {/* NOTE (updated): we now render a visible select bound to the same field, so a hidden input is not required. */}
 
       {/* --- Client picker --- */}
       <div>
@@ -417,30 +443,34 @@ export default function IntakeFormPage() {
         </p>
       </div>
 
-      {/* Assign Therapist for NEW client only */}
-      {!isExisting && (
-        <div>
-          <label className="block font-medium mb-1">Assign Therapist *</label>
-          <select
-            className="border rounded p-2 w-full"
-            {...register("newClientTherapistId", {
-              required: "Please select a therapist for the new client",
-            })}
-            defaultValue=""
-          >
-            <option value="">— Select therapist —</option>
-            {therapists.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-          {errors.newClientTherapistId && (
-            <p className="text-red-600 text-xs mt-1">{errors.newClientTherapistId.message}</p>
-          )}
-          <p className="text-xs text-gray-500 mt-1">
-            This appears only when creating a new client.
-          </p>
-        </div>
-      )}
+      {/* Assign Therapist (always visible) */}
+      {/* NOTE (updated): Single field "therapistId". Disabled when existing client is selected. */}
+      <div>
+        <label className="block font-medium mb-1">
+          Assign Therapist {isExisting ? "(from client record)" : "*"}
+        </label>
+        <select
+          className="border rounded p-2 w-full"
+          disabled={isExisting} // lock when using an existing client
+          {...register("therapistId", {
+            required: !isExisting ? "Please select a therapist for the new client" : false,
+            valueAsNumber: true, // ensure value is a number in form data
+          })}
+        >
+          {!isExisting && <option value="">— Select therapist —</option>}
+          {therapists.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+        {!isExisting && errors.therapistId && (
+          <p className="text-red-600 text-xs mt-1">{errors.therapistId.message}</p>
+        )}
+        <p className="text-xs text-gray-500 mt-1">
+          {isExisting
+            ? "Taken from the existing client’s assigned therapist."
+            : "Required for new client."}
+        </p>
+      </div>
 
       {/* --- Personal Info --- */}
       <h2 className="text-xl font-semibold text-brandLavender">Confidential Information</h2>

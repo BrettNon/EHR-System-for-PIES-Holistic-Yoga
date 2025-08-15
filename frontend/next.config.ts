@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
-  image: { unoptimized: true }
+  images: { unoptimized: true }
 };
 
 export default nextConfig;

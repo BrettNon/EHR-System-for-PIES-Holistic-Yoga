@@ -178,7 +178,7 @@ export default function AllClientsPage() {
   const loadTherapists = async () => {
     if (!token) return;
     try {
-      const res = await fetch("http://localhost:8080/therapists/active", {
+      const res = await fetch(`${API_BASE_URL}/therapists/active`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to load therapists");
