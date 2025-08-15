@@ -105,7 +105,7 @@ npm run dev
 **[PIES Fitness Yoga](https://www.piesfitnessyoga.com/)**  
 PIES Fitness Yoga Studio offers diverse fitness and wellness programs designed to meet the needs of every individual, regardless of fitness level or experience. From gentle yoga for flexibility and relaxation to high-energy cardio and kickboxing classes, PIES provides a wide range of options to help clients achieve their physical, mental, and spiritual wellness goals. Classes are offered seven days a week, with multiple locations and evening schedules to accommodate busy lifestyles.  
 
-The studio emphasizes a holistic approach — conditioning the body to foster clarity of mind and spiritual growth. Whether starting with beginner-friendly yoga or progressing to advanced combination classes, PIES creates a welcoming environment for personal transformation.  
+The studio emphasizes a holistic approach, conditioning the body to foster clarity of mind and spiritual growth. Whether starting with beginner-friendly yoga or progressing to advanced combination classes, PIES creates a welcoming environment for personal transformation.  
 
 **Founder/Owner:** *Marsha Banks-Harold*  
 **Project Sponsor:** *[Dr. Tessema Mindaye Mengistu](https://scholar.google.com/citations?user=x9JJf_AAAAAJ&hl=en)* — Took over as project sponsor during Sprint 4.
